@@ -123,8 +123,6 @@ td.act{display:flex;gap:6px;justify-content:flex-end}
 .choice{display:grid;gap:10px;width:100%;margin-top:10px}
 .choice .btn{padding:16px;font-size:18px}
 .lock{max-width:560px}
-.demo-note{margin:0 0 14px;padding:8px 12px;border:1.5px dashed var(--line);border-radius:6px;color:var(--ink2);font-size:14px}
-.demo-note strong{color:var(--ink)}
 @media (prefers-reduced-motion:no-preference){.key{transition:transform .06s}}
 </style>
 
@@ -142,7 +140,6 @@ td.act{display:flex;gap:6px;justify-content:flex-end}
     </nav>
   </header>
   <p class="status" id="status" role="status"></p>
-  <p class="demo-note"><strong>Versión de prueba.</strong> Los datos se guardan solo en este navegador de este equipo y no se comparten con otros. El candado del Portal aquí es solo de demostración.</p>
 
   <main>
     <section id="view-checador" class="kiosk">
@@ -165,11 +162,10 @@ td.act{display:flex;gap:6px;justify-content:flex-end}
     <section id="view-portal" hidden>
       <div class="panel lock" id="lock" hidden>
         <h2 id="lock-title">Portal protegido</h2>
-        <p class="hint" id="lock-hint">Cargando…</p>
+        <p class="hint" id="lock-hint">Conectando con el servidor…</p>
         <form id="lock-form" autocomplete="off">
           <div class="grid-form">
-            <div class="field"><label for="lk-pass">Contraseña de 6 dígitos</label><input id="lk-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></div>
-            <div class="field" id="lk-confirm-wrap" hidden><label for="lk-pass2">Repite la contraseña</label><input id="lk-pass2" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></div>
+            <div class="field"><label for="lk-pass">Contraseña</label><input id="lk-pass" type="password" maxlength="10" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
           </div>
           <div class="actions"><button class="btn" id="lk-go" type="submit" disabled>Entrar</button></div>
         </form>
@@ -224,7 +220,7 @@ td.act{display:flex;gap:6px;justify-content:flex-end}
             <button class="btn ghost" id="r-xlsx" type="button" disabled>Descargar para Google Sheets (.xlsx)</button>
             <button class="btn ghost" id="r-csv" type="button" disabled>CSV por día</button>
           </div>
-          <p class="hint" id="r-msg">El archivo .xlsx trae tres hojas: Resumen, Por día (con entrada, comida y salida) y Checadas. Las horas trabajadas no incluyen la comida. Los retardos y las comidas de más de una hora salen marcados en color. Para abrirlo en Google Sheets, súbelo a tu Google Drive y elige Abrir con Hojas de cálculo.</p>
+          <p class="hint" id="r-msg">El archivo .xlsx trae tres hojas: Resumen, Por día (con entrada, comida y salida) y Checadas. Las horas trabajadas no incluyen la comida. Los retardos y las comidas de más de una hora salen marcados en color. Para abrirlo en Google Sheets, súbelo a tu Google Drive y elige Abrir con Hojas de cálculo. Todas las checadas, además, quedan guardadas en la pestaña Checadas de tu hoja de Google.</p>
           <div id="r-out"></div>
         </div>
         <div class="panel">
@@ -250,23 +246,17 @@ td.act{display:flex;gap:6px;justify-content:flex-end}
             <div class="field"><label for="a-tol">Retardo a partir del minuto</label><input id="a-tol" type="number" min="0" max="120" value="16"></div>
           </div>
           <div class="actions"><button class="btn" id="a-save" type="button">Guardar ajustes</button></div>
-          <p class="hint" id="a-msg">Hay retardo cuando la primera entrada del día llega con esa cantidad de minutos de tardanza o más. Con 16, llegar a las 9:16 ya es retardo y a las 9:15 no. Si la comida dura más que la duración indicada, se marca como comida excedida.</p>
+          <p class="hint" id="a-msg">Hay retardo cuando la primera entrada del día llega con esa cantidad de minutos de tardanza o más. Con 16, llegar a las 9:16 ya es retardo y a las 9:15 no. Si la comida dura más que la duración indicada, se marca como comida excedida. La zona horaria y si el reloj muestra quién está en turno se cambian en la pestaña Config de tu hoja de Google.</p>
         </div>
         <div class="panel">
           <h2>Contraseña del portal</h2>
           <div class="grid-form">
-            <div class="field"><label for="a-cur">Contraseña actual</label><input id="a-cur" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></div>
-            <div class="field"><label for="a-new">Contraseña nueva</label><input id="a-new" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></div>
-            <div class="field"><label for="a-new2">Repite la nueva</label><input id="a-new2" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></div>
+            <div class="field"><label for="a-cur">Contraseña actual</label><input id="a-cur" type="password" maxlength="10" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+            <div class="field"><label for="a-new">Contraseña nueva</label><input id="a-new" type="password" maxlength="10" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+            <div class="field"><label for="a-new2">Repite la nueva</label><input id="a-new2" type="password" maxlength="10" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
           </div>
           <div class="actions"><button class="btn" id="p-save" type="button">Cambiar contraseña</button></div>
-          <p class="hint" id="p-msg">El portal se bloquea solo después de 5 minutos sin usarlo. Cinco intentos fallidos esperan 30 segundos.</p>
-        </div>
-        <div class="panel">
-          <h2>Datos de prueba</h2>
-          <p class="hint" style="margin-top:0">Todo lo que registres vive solo en este navegador. Puedes borrarlo para empezar de cero.</p>
-          <div class="actions"><button class="btn danger" id="d-clear" type="button">Borrar todos los datos de prueba</button></div>
-          <p class="hint" id="d-msg"></p>
+          <p class="hint" id="p-msg">De 4 a 10 caracteres: letras, números y símbolos. El portal se bloquea solo después de 5 minutos sin usarlo. Cinco intentos fallidos esperan 1 minuto. Si la olvidas, puedes crear una nueva desde el menú Checador de tu hoja de Google.</p>
         </div>
       </div>
       </div>
@@ -278,6 +268,7 @@ td.act{display:flex;gap:6px;justify-content:flex-end}
 <script>
 (function(){
 'use strict';
+var API_URL = 'https://script.google.com/macros/s/AKfycbwBzW9hu14kI4JE0b8n9RW6BVoZgslgo3rFISGfKyNqcVLGl3c83zym6VGs807Wb5yBYg/exec';
 var $ = function(id){ return document.getElementById(id); };
 function h(tag, attrs){
   var e = document.createElement(tag);
@@ -299,54 +290,98 @@ function h(tag, attrs){
   return e;
 }
 var pad = function(n){ return String(n).padStart(2, '0'); };
-var dayKey = function(ts){ var d = new Date(ts); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
-var hm = function(ts){ var d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
-var hms = function(ts){ var d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); };
 var toMin = function(s){ var m = /^(\d{1,2}):(\d{2})$/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
 var fmtDur = function(min){ var t = Math.round(min); return Math.floor(t / 60) + ' h ' + pad(t % 60) + ' min'; };
 var fmtHM = function(min){ var t = Math.round(min); return Math.floor(t / 60) + ':' + pad(t % 60); };
 var round2 = function(x){ return Math.round(x * 100) / 100; };
-var longDate = function(ts){ var t = new Date(ts).toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'long', year:'numeric'}); return t.charAt(0).toUpperCase() + t.slice(1); };
-function parseDay(s, plus){ var p = (s || '').split('-').map(Number); if (p.length !== 3 || p.some(isNaN)) return NaN; return new Date(p[0], p[1] - 1, p[2] + (plus || 0)).getTime(); }
+var noop = function(){};
 var HALF_DAY = 16 * 3600e3;
 var TIPO = {entrada:{t:'Entrada', c:'in'}, comida_ini:{t:'A comer', c:'meal'}, comida_fin:{t:'Regreso', c:'meal'}, salida:{t:'Salida', c:'out'}};
 var TIPO_LARGO = {entrada:'Entrada', comida_ini:'Salida a comida', comida_fin:'Regreso de comida', salida:'Salida'};
 var TK_HEAD = {entrada:'Entrada registrada', comida_ini:'Salida a comida', comida_fin:'Regreso de comida', salida:'Salida registrada'};
-var esRetardo = function(tarde){ var t = +S.cfg.tolerancia; return tarde > 0 && tarde >= (t > 0 ? t : 1); };
-var limComida = function(){ return +S.cfg.comida > 0 ? +S.cfg.comida : 60; };
 var tipoT = function(t){ return (TIPO[t] || {t: t}).t; };
 var tipoC = function(t){ return (TIPO[t] || {c: 'off'}).c; };
 
 var S = {
-  db: null, dl: null, admin: false, emps: [], recent: [], cfg: {negocio: '', tolerancia: 16, comida: 60},
-  sec: null, secLoaded: false, unlocked: false, idle: null,
-  cfgFilled: false, pin: '', busy: false, tt: null, mt: null, editId: null, rep: null, day: dayKey(Date.now())
+  emps: [], recent: [], personas: null, cfg: {negocio: '', tolerancia: 16, comida: 60},
+  tz: 'America/Mexico_City', offset: 0, token: null, unlocked: false, idle: null, clave: true, listo: false,
+  cfgFilled: false, pin: '', busy: false, tt: null, mt: null, editId: null, rep: null, day: '', poll: null
 };
+var esRetardo = function(tarde){ var t = +S.cfg.tolerancia; return tarde > 0 && tarde >= (t > 0 ? t : 1); };
+var limComida = function(){ return +S.cfg.comida > 0 ? +S.cfg.comida : 60; };
+
+/* ---------- Hora: siempre la del servidor, en la zona del negocio ---------- */
+var fmtTz = null;
+function setTz(tz){
+  var base = {year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hourCycle:'h23'};
+  try { base.timeZone = tz; fmtTz = new Intl.DateTimeFormat('en-GB', base); S.tz = tz; }
+  catch (e) { delete base.timeZone; fmtTz = new Intl.DateTimeFormat('en-GB', base); S.tz = undefined; }
+}
+function P(ts){ var o = {}; fmtTz.formatToParts(new Date(ts)).forEach(function(p){ o[p.type] = p.value; }); return o; }
+var nowMs = function(){ return Date.now() + S.offset; };
+var dayKey = function(ts){ var o = P(ts); return o.year + '-' + o.month + '-' + o.day; };
+var hm = function(ts){ var o = P(ts); return o.hour + ':' + o.minute; };
+var hms = function(ts){ var o = P(ts); return o.hour + ':' + o.minute + ':' + o.second; };
+var minDia = function(ts){ var o = P(ts); return (+o.hour) * 60 + (+o.minute); };
+var longDate = function(ts){
+  var t = new Date(ts).toLocaleDateString('es-MX', {timeZone: S.tz, weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  return t.charAt(0).toUpperCase() + t.slice(1);
+};
+setTz('America/Mexico_City');
+S.day = dayKey(nowMs());
+
 function empMap(){ var m = {}; S.emps.forEach(function(e){ m[e.id] = e; }); return m; }
 function empName(r){ var e = empMap()[r.emp]; return (e && e.nombre) || r.nombre || '(persona eliminada)'; }
-function activeEmps(){ return S.emps.filter(function(e){ return e.activo !== false; }); }
-
-async function sha(s){
-  var b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-  return Array.from(new Uint8Array(b)).map(function(x){ return x.toString(16).padStart(2, '0'); }).join('');
-}
-function errMsg(e){
-  var c = e && e.code;
-  if (c === 'quota_exceeded') return 'El registro está lleno. Descarga el reporte y avisa al administrador para limpiar checadas antiguas.';
-  if (c === 'invalid_argument') return 'Tu cuenta no tiene permiso para esta acción.';
-  if (c === 'revoked') return 'Se retiró tu acceso a esta página.';
-  return 'No se pudo guardar. Intenta de nuevo.';
-}
 function setStatus(t){ $('status').textContent = t || ''; }
 function setHint(id, text, kind){ var e = $(id); e.textContent = text; e.className = 'hint' + (kind ? ' ' + kind : ''); }
+function errMsg(e){ return (e && e.message) || 'No se pudo completar la acción. Intenta de nuevo.'; }
+function mkErr(code, msg){ var e = new Error(msg); e.code = code; return e; }
+
+/* ---------- Conexión con el script de Google ---------- */
+async function api(action, data, noAuth){
+  if (!API_URL || API_URL.indexOf('http') !== 0) throw mkErr('config', 'Falta conectar la página con tu hoja de Google.');
+  var body = {a: action};
+  for (var k in (data || {})) body[k] = data[k];
+  if (!noAuth && S.token) body.t = S.token;
+  var j;
+  try {
+    var res = await fetch(API_URL, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify(body)});
+    j = await res.json();
+  } catch (e) { throw mkErr('red', 'Sin conexión con el servidor. Revisa tu internet e intenta de nuevo.'); }
+  if (!j || !j.ok){
+    if (j && j.code === 'sesion' && action !== 'salir') lockNow();
+    throw mkErr((j && j.code) || 'error', (j && j.error) || 'No se pudo completar la acción.');
+  }
+  if (S.unlocked) startIdle();
+  return j;
+}
+async function refresh(){
+  var t0 = Date.now();
+  var j = await api('estado', {}, true);
+  var t1 = Date.now();
+  S.offset = j.now - Math.round((t0 + t1) / 2);
+  if (j.cfg.tz !== S.tz) setTz(j.cfg.tz);
+  S.cfg = {negocio: j.cfg.negocio || '', tolerancia: j.cfg.tolerancia, comida: j.cfg.comida};
+  S.clave = j.clave; S.personas = j.personas; S.recent = j.feed || []; S.listo = true;
+  setStatus('');
+  tick(); renderCfg(); renderFeed(); renderPortal();
+}
+function sync(){ refresh().catch(noop); }
+function startPoll(){
+  clearInterval(S.poll);
+  S.poll = setInterval(function(){
+    if (document.hidden || $('view-checador').hidden) return;
+    refresh().catch(function(){ setStatus('Sin conexión con el servidor. Reintentando…'); });
+  }, 60000);
+}
 
 /* ---------- Reloj ---------- */
 function tick(){
-  var now = Date.now(), d = new Date(now);
-  $('ck-hm').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
-  $('ck-s').textContent = ':' + pad(d.getSeconds());
+  var now = nowMs(), o = P(now);
+  $('ck-hm').textContent = o.hour + ':' + o.minute;
+  $('ck-s').textContent = ':' + o.second;
   $('date').textContent = longDate(now);
-  var k = dayKey(now);
+  var k = o.year + '-' + o.month + '-' + o.day;
   if (k !== S.day){ S.day = k; renderFeed(); }
 }
 
@@ -361,10 +396,11 @@ function renderPin(){
   var d = $('dots'); d.replaceChildren();
   for (var i = 0; i < 4; i++) d.append(h('span', {class:'dot' + (i < S.pin.length ? ' on' : '')}));
 }
+var MSG0 = 'Escribe tu PIN de 4 dígitos';
 function setMsg(text, kind){
   var m = $('msg'); m.textContent = text; m.className = 'msg' + (kind ? ' ' + kind : '');
   clearTimeout(S.mt);
-  if (kind) S.mt = setTimeout(function(){ m.textContent = 'Escribe tu PIN de 4 dígitos'; m.className = 'msg'; }, 3500);
+  if (kind) S.mt = setTimeout(function(){ m.textContent = MSG0; m.className = 'msg'; }, 3500);
 }
 function press(x){
   if (S.busy) return;
@@ -375,95 +411,45 @@ function press(x){
   if (S.pin.length === 4) punch();
 }
 
-async function findByPin(pin){
-  for (var i = 0; i < S.emps.length; i++){
-    var e = S.emps[i];
-    if (e.pinHash && (await sha(e.id + ':' + pin)) === e.pinHash) return e;
-  }
-  return null;
-}
-
 async function punch(){
   if (S.busy) return;
-  if (!S.db){ setMsg('Sin conexión con el registro.', 'err'); S.pin = ''; renderPin(); return; }
+  if (!S.listo){ setMsg('Todavía no hay conexión con el servidor.', 'err'); S.pin = ''; renderPin(); return; }
   S.busy = true;
   var pin = S.pin;
+  setMsg('Registrando…');
   try {
-    var emp = await findByPin(pin);
-    if (!emp){ setMsg('PIN incorrecto', 'err'); return; }
-    if (emp.activo === false){ setMsg('Esta persona está dada de baja', 'err'); return; }
-    var now = Date.now(), today = dayKey(now);
-    var snap = await S.db.collection('checadas').where('emp', '==', emp.id).orderBy('ts', 'desc').limit(12).get();
-    var recs = snap.docs.map(function(d){ return d.data(); });
-    var last = recs[0];
-    if (last && now - last.ts < 30000){
-      setMsg('Ya checaste hace ' + Math.max(1, Math.round((now - last.ts) / 1000)) + ' s', 'err'); return;
-    }
-    var fresh = last && now - last.ts < HALF_DAY;
-    var working = fresh && (last.tipo === 'entrada' || last.tipo === 'comida_fin');
-    var onLunch = fresh && last.tipo === 'comida_ini';
-    var hadLunch = recs.some(function(r){ return r.dia === today && r.tipo === 'comida_ini'; });
-    if (working && !hadLunch){ showChoice(emp, recs); return; }
-    await commit(emp, onLunch ? 'comida_fin' : working ? 'salida' : 'entrada', recs);
+    var j = await api('checar', {pin: pin}, true);
+    setMsg(MSG0);
+    if (j.choice) showChoice(j.nombre, pin);
+    else { showTicket(j.ticket); sync(); }
   } catch (e) {
     setMsg(errMsg(e), 'err');
   } finally {
     S.busy = false; S.pin = ''; renderPin();
   }
 }
-
-async function commit(emp, tipo, recs){
-  var now = Date.now(), today = dayKey(now);
-  var rec = {emp: emp.id, nombre: emp.nombre, tipo: tipo, ts: now, dia: today, manual: false};
-  var ref = await S.db.collection('checadas').add(rec);
-  var nota = '', flag = '', last = recs[0];
-  if (tipo === 'entrada'){
-    var yaEntro = recs.some(function(r){ return r.dia === today && r.tipo === 'entrada'; });
-    var prog = toMin(emp.entrada);
-    if (yaEntro){ nota = 'Reingreso registrado'; }
-    else if (prog != null){
-      var d = new Date(now), tarde = d.getHours() * 60 + d.getMinutes() - prog;
-      if (esRetardo(tarde)){ nota = 'Retardo de ' + tarde + ' min'; flag = 'late'; }
-      else { nota = 'Puntual'; flag = 'ok'; }
-    }
-  } else if (tipo === 'comida_ini'){
-    nota = 'Tu comida empezó a las ' + hm(now);
-  } else if (tipo === 'comida_fin'){
-    if (last && last.tipo === 'comida_ini'){
-      var mc = (now - last.ts) / 60000;
-      if (mc > limComida()){ nota = 'Comida de ' + fmtDur(mc) + ': excediste ' + Math.round(mc - limComida()) + ' min'; flag = 'late'; }
-      else { nota = 'Comida de ' + fmtDur(mc); flag = 'ok'; }
-    }
-  } else {
-    var todays = recs.filter(function(r){ return r.dia === today; }).concat([rec]);
-    var dd = buildReport(todays).dias.filter(function(x){ return x.emp === emp.id; }).pop();
-    if (dd){ nota = 'Trabajaste ' + fmtDur(dd.min); flag = 'ok'; }
-  }
-  showTicket({tipo: tipo, nombre: emp.nombre, ts: now, folio: ref.id.slice(-5).toUpperCase(), nota: nota, flag: flag});
-}
-
-function showChoice(emp, recs){
+function showChoice(nombre, pin){
   var k = $('ticket');
   k.replaceChildren(
-    h('div', {class:'tk-head comida_ini'}, 'Hola, ' + emp.nombre),
+    h('div', {class:'tk-head comida_ini'}, 'Hola, ' + nombre),
     h('div', {class:'tk-body'},
       h('div', {class:'tk-date', style:'text-transform:none'}, '¿Qué vas a registrar?'),
       h('div', {class:'choice'},
-        h('button', {type:'button', class:'btn', onclick:function(){ choose(emp, 'comida_ini', recs); }}, 'Salir a comer'),
-        h('button', {type:'button', class:'btn ghost', onclick:function(){ choose(emp, 'salida', recs); }}, 'Registrar mi salida'),
+        h('button', {type:'button', class:'btn', onclick:function(){ choose(pin, 'comida_ini'); }}, 'Salir a comer'),
+        h('button', {type:'button', class:'btn ghost', onclick:function(){ choose(pin, 'salida'); }}, 'Registrar mi salida'),
         h('button', {type:'button', class:'btn ghost', onclick:hideTicket}, 'Cancelar')))
   );
   $('entry').hidden = true; k.hidden = false;
   clearTimeout(S.tt); S.tt = setTimeout(hideTicket, 20000);
 }
-async function choose(emp, tipo, recs){
+async function choose(pin, accion){
   if (S.busy) return;
   S.busy = true;
-  try { await commit(emp, tipo, recs); }
+  $('ticket').querySelectorAll('button').forEach(function(b){ b.disabled = true; });
+  try { var j = await api('checar', {pin: pin, accion: accion}, true); showTicket(j.ticket); sync(); }
   catch (e) { hideTicket(); setMsg(errMsg(e), 'err'); }
   finally { S.busy = false; }
 }
-
 function showTicket(t){
   var k = $('ticket');
   k.replaceChildren(
@@ -484,17 +470,19 @@ function hideTicket(){ clearTimeout(S.tt); $('ticket').hidden = true; $('entry')
 /* ---------- Bitácora del día ---------- */
 function renderFeed(){
   var present = $('present'), today = $('today');
-  var seen = {}, here = [], lunch = [];
+  var seen = {}, here = [], lunch = [], now = nowMs();
   S.recent.forEach(function(r){
     if (r.emp in seen) return;
     seen[r.emp] = 1;
-    if (Date.now() - r.ts >= HALF_DAY) return;
+    if (now - r.ts >= HALF_DAY) return;
     if (r.tipo === 'entrada' || r.tipo === 'comida_fin') here.push(r);
     else if (r.tipo === 'comida_ini') lunch.push(r);
   });
   var chip = function(r, cls){ return h('span', {class:'chip' + cls}, empName(r), h('small', null, 'desde ' + hm(r.ts))); };
-  if (!S.emps.length){
-    present.replaceChildren(h('p', {class:'empty'}, S.admin ? 'Aún no hay personal. Abre Portal y da de alta a la primera persona.' : 'Aún no hay personal registrado. Pide al administrador que te dé de alta.'));
+  if (S.personas === null){
+    present.replaceChildren(h('p', {class:'empty'}, 'Conectando con el servidor…'));
+  } else if (S.personas === 0){
+    present.replaceChildren(h('p', {class:'empty'}, 'Aún no hay personal registrado. Se da de alta desde el Portal.'));
   } else if (!here.length && !lunch.length){
     present.replaceChildren(h('p', {class:'empty'}, 'Nadie ha checado entrada.'));
   } else {
@@ -503,9 +491,10 @@ function renderFeed(){
     if (lunch.length) parts.push(h('p', {class:'muted', style:'margin:12px 0 6px'}, 'En comida'), h('div', {class:'chips'}, lunch.map(function(r){ return chip(r, ' meal'); })));
     present.replaceChildren.apply(present, parts);
   }
-  var k = dayKey(Date.now());
+  var k = dayKey(now);
   var rows = S.recent.filter(function(r){ return r.dia === k; });
-  if (!rows.length) today.replaceChildren(h('p', {class:'empty'}, 'Aún no hay movimientos hoy.'));
+  if (S.personas === null) today.replaceChildren();
+  else if (!rows.length) today.replaceChildren(h('p', {class:'empty'}, 'Aún no hay movimientos hoy.'));
   else today.replaceChildren(h('ul', {class:'log'}, rows.map(function(r){
     return h('li', null, h('span', {class:'t'}, hm(r.ts)), h('span', {class:'n'}, empName(r)),
       h('span', {class:'pill ' + tipoC(r.tipo)}, tipoT(r.tipo)));
@@ -551,6 +540,7 @@ function resetEmpForm(){
   $('f-cancel').hidden = true;
   $('f-pin').placeholder = '';
 }
+var F_HINT = 'El PIN se guarda cifrado y no se puede volver a ver. Para cambiarlo, edita a la persona y escribe uno nuevo.';
 function editEmp(id){
   var e = empMap()[id]; if (!e) return;
   S.editId = id;
@@ -565,52 +555,32 @@ function editEmp(id){
   $('emp-form').scrollIntoView({block:'center'});
 }
 async function toggleEmp(id){
-  var e = empMap()[id]; if (!e || !S.admin || !S.unlocked) return;
-  try { await S.db.doc('empleados/' + id).update({activo: e.activo === false}); }
+  if (!S.unlocked) return;
+  try { await api('bajaEmpleado', {id: id}); await loadAdmin(); }
   catch (err) { setHint('f-msg', errMsg(err), 'err'); }
 }
-async function pinTaken(pin, exceptId){
-  for (var i = 0; i < S.emps.length; i++){
-    var e = S.emps[i];
-    if (e.id === exceptId || e.activo === false || !e.pinHash) continue;
-    if ((await sha(e.id + ':' + pin)) === e.pinHash) return true;
-  }
-  return false;
-}
-async function genPin(){
-  for (var i = 0; i < 40; i++){
-    var p = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-    if (!(await pinTaken(p, S.editId))){ $('f-pin').value = p; return; }
-  }
-}
+function genPin(){ $('f-pin').value = String(Math.floor(Math.random() * 10000)).padStart(4, '0'); }
 async function saveEmp(ev){
   ev.preventDefault();
-  if (!S.admin || !S.unlocked || !S.db) return;
+  if (!S.unlocked) return;
   var nombre = $('f-nombre').value.trim(), pin = $('f-pin').value.trim();
   if (!nombre) return setHint('f-msg', 'Escribe el nombre de la persona.', 'err');
   if (pin && !/^\d{4}$/.test(pin)) return setHint('f-msg', 'El PIN debe tener exactamente 4 números.', 'err');
   if (!S.editId && !pin) return setHint('f-msg', 'Escribe un PIN de 4 dígitos o usa Generar.', 'err');
+  $('f-save').disabled = true;
   try {
-    if (pin && await pinTaken(pin, S.editId)) return setHint('f-msg', 'Ese PIN ya lo usa otra persona. Prueba con otro.', 'err');
-    var data = {nombre: nombre, puesto: $('f-puesto').value.trim(), entrada: $('f-entrada').value, salida: $('f-salida').value};
-    if (S.editId){
-      if (pin) data.pinHash = await sha(S.editId + ':' + pin);
-      await S.db.doc('empleados/' + S.editId).update(data);
-      setHint('f-msg', 'Cambios guardados.', 'ok');
-    } else {
-      var ref = S.db.collection('empleados').doc();
-      data.pinHash = await sha(ref.id + ':' + pin); data.activo = true; data.creado = Date.now();
-      await ref.set(data);
-      setHint('f-msg', nombre + ' quedó dada de alta. Entrega el PIN ' + pin + ' a la persona; ya no se podrá ver después.', 'ok');
-    }
-    var keep = $('f-msg').textContent, kind = 'ok';
-    resetEmpForm(); setHint('f-msg', keep, kind);
+    var j = await api('guardarEmpleado', {id: S.editId, nombre: nombre, puesto: $('f-puesto').value.trim(), entrada: $('f-entrada').value, salida: $('f-salida').value, pin: pin});
+    var msg = j.nuevo ? nombre + ' quedó dada de alta. Entrega el PIN ' + pin + ' a la persona; ya no se podrá ver después.' : 'Cambios guardados.';
+    await loadAdmin();
+    resetEmpForm(); setHint('f-msg', msg, 'ok');
+    sync();
   } catch (e) { setHint('f-msg', errMsg(e), 'err'); }
+  finally { $('f-save').disabled = false; }
 }
 
 /* ---------- Portal: reportes ---------- */
 function buildReport(recs){
-  var em = empMap(), tol = +S.cfg.tolerancia || 0, now = Date.now(), by = {}, dias = [];
+  var em = empMap(), now = nowMs(), by = {}, dias = [];
   recs.forEach(function(r){ (by[r.emp] = by[r.emp] || []).push(r); });
   Object.keys(by).forEach(function(eid){
     var list = by[eid].slice().sort(function(a, b){ return a.ts - b.ts; });
@@ -647,7 +617,7 @@ function buildReport(recs){
       var d = days[k], retardo = 0;
       d.entradaProg = (e && e.entrada) || ''; d.salidaProg = (e && e.salida) || '';
       if (d.primera != null && e && toMin(e.entrada) != null){
-        var dt = new Date(d.primera), tarde = dt.getHours() * 60 + dt.getMinutes() - toMin(e.entrada);
+        var tarde = minDia(d.primera) - toMin(e.entrada);
         if (esRetardo(tarde)) retardo = tarde;
       }
       d.retardo = retardo; d.exceso = d.comidaMin > 0 ? Math.max(0, Math.round(d.comidaMin - limComida())) : 0; dias.push(d);
@@ -673,21 +643,17 @@ function estadoDia(d){
   return s;
 }
 async function runReport(){
-  if (!S.db || !S.unlocked) return;
-  var d1 = parseDay($('r-desde').value), d2 = parseDay($('r-hasta').value, 1);
-  if (isNaN(d1) || isNaN(d2) || d2 <= d1) return setHint('r-msg', 'Elige un rango de fechas válido.', 'err');
+  if (!S.unlocked) return;
+  var d1 = $('r-desde').value, d2 = $('r-hasta').value;
+  if (!d1 || !d2 || d2 < d1) return setHint('r-msg', 'Elige un rango de fechas válido.', 'err');
   $('r-run').disabled = true;
   try {
-    var q = S.db.collection('checadas').where('ts', '>=', d1).where('ts', '<', d2);
-    var eid = $('r-emp').value;
-    if (eid) q = q.where('emp', '==', eid);
-    var snap = await q.orderBy('ts').limit(1000).get();
-    var recs = snap.docs.map(function(d){ return Object.assign({id: d.id}, d.data()); });
-    var b = buildReport(recs);
-    S.rep = {desde: $('r-desde').value, hasta: $('r-hasta').value, resumen: b.resumen, dias: b.dias, regs: recs.slice().sort(function(a, c){ return c.ts - a.ts; })};
+    var j = await api('reporte', {desde: d1, hasta: d2, emp: $('r-emp').value});
+    var recs = j.regs, b = buildReport(recs);
+    S.rep = {desde: d1, hasta: d2, resumen: b.resumen, dias: b.dias, regs: recs.slice().sort(function(a, c){ return c.ts - a.ts; })};
     renderReport();
-    setHint('r-msg', snap.size >= 1000 ? 'Se cargaron las primeras 1000 checadas del rango. Acorta el rango para ver el resto.' : 'Reporte generado con ' + recs.length + ' checadas.', snap.size >= 1000 ? 'err' : 'ok');
-  } catch (e) { setHint('r-msg', 'No se pudo generar el reporte. Intenta de nuevo.', 'err'); }
+    setHint('r-msg', j.truncado ? 'Se cargaron las primeras 20,000 checadas del rango. Acorta el rango para ver el resto.' : 'Reporte generado con ' + recs.length + ' checadas.', j.truncado ? 'err' : 'ok');
+  } catch (e) { setHint('r-msg', errMsg(e), 'err'); }
   finally { $('r-run').disabled = false; }
 }
 function table(heads, rows, numCols){
@@ -740,24 +706,22 @@ function delBtn(id){
       return;
     }
     clearTimeout(tm); b.disabled = true;
-    try { await S.db.doc('checadas/' + id).delete(); await runReport(); }
+    try { await api('borrarChecada', {id: id}); await runReport(); }
     catch (e) { b.disabled = false; armed = false; b.textContent = 'Eliminar'; setHint('r-msg', errMsg(e), 'err'); }
   });
   return b;
 }
 async function addManual(ev){
   ev.preventDefault();
-  if (!S.admin || !S.unlocked || !S.db) return;
+  if (!S.unlocked) return;
   var emp = $('m-emp').value, f = $('m-fecha').value, t = $('m-hora').value;
   if (!emp || !f || !t) return setHint('m-msg', 'Completa persona, fecha y hora.', 'err');
-  var p = f.split('-').map(Number), q = t.split(':').map(Number);
-  var ts = new Date(p[0], p[1] - 1, p[2], q[0], q[1]).getTime();
-  var e = empMap()[emp];
   try {
-    await S.db.collection('checadas').add({emp: emp, nombre: e ? e.nombre : '', tipo: $('m-tipo').value, ts: ts, dia: dayKey(ts), manual: true, nota: $('m-nota').value.trim()});
+    await api('checadaManual', {emp: emp, fecha: f, hora: t, tipo: $('m-tipo').value, nota: $('m-nota').value.trim()});
     $('m-nota').value = '';
     setHint('m-msg', 'Checada agregada.', 'ok');
     if (S.rep) runReport();
+    sync();
   } catch (err) { setHint('m-msg', errMsg(err), 'err'); }
 }
 
@@ -767,10 +731,16 @@ function csvCell(v){
   if (/^[=+\-@]/.test(s)) s = "'" + s;
   return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
-async function saveFile(filename, data){
-  if (!S.dl) return setHint('r-msg', 'Tu navegador no permite descargar desde esta página.', 'err');
-  try { await S.dl.save({filename: filename, data: data}); setHint('r-msg', 'Archivo listo: ' + filename, 'ok'); }
-  catch (e) { if (!e || e.code !== 'declined') setHint('r-msg', 'No se pudo descargar el archivo.', 'err'); }
+function saveFile(filename, data){
+  try {
+    var type = /\.xlsx$/i.test(filename) ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv;charset=utf-8';
+    var blob = data instanceof Blob ? data : new Blob([data], {type: type});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    setHint('r-msg', 'Archivo listo: ' + filename, 'ok');
+  } catch (e) { setHint('r-msg', 'No se pudo descargar el archivo.', 'err'); }
 }
 var DET_HEAD = ['Fecha', 'Persona', 'Entrada programada', 'Hora de entrada', 'Salida a comida', 'Regreso de comida', 'Minutos de comida', 'Exceso de comida (min)', 'Hora de salida', 'Horas trabajadas', 'Minutos de retardo', 'Estado'];
 function detRows(r){
@@ -833,70 +803,66 @@ async function exportXlsx(){
 /* ---------- Ajustes ---------- */
 function renderCfg(){
   $('brand').textContent = S.cfg.negocio || 'Checador';
-  if (!S.cfgFilled){ $('a-negocio').value = S.cfg.negocio || ''; $('a-tol').value = S.cfg.tolerancia; $('a-comida').value = S.cfg.comida; S.cfgFilled = true; }
+  if (!S.cfgFilled && S.unlocked){ $('a-negocio').value = S.cfg.negocio || ''; $('a-tol').value = S.cfg.tolerancia; $('a-comida').value = S.cfg.comida; S.cfgFilled = true; }
 }
 async function saveCfg(){
-  if (!S.admin || !S.unlocked || !S.db) return;
-  var tol = Math.max(0, Math.min(120, parseInt($('a-tol').value, 10) || 0));
+  if (!S.unlocked) return;
   try {
-    var com = Math.max(15, Math.min(240, parseInt($('a-comida').value, 10) || 60));
-    await S.db.doc('config/general').set({negocio: $('a-negocio').value.trim(), tolerancia: tol, comida: com});
+    await api('guardarConfig', {negocio: $('a-negocio').value.trim(), tolerancia: $('a-tol').value, comida: $('a-comida').value});
     setHint('a-msg', 'Ajustes guardados.', 'ok');
+    await refresh();
   } catch (e) { setHint('a-msg', errMsg(e), 'err'); }
 }
 
 /* ---------- Candado del portal ---------- */
-var failN = 0, failUntil = 0;
-function randSalt(){ return Array.from(crypto.getRandomValues(new Uint8Array(8))).map(function(x){ return x.toString(16).padStart(2, '0'); }).join(''); }
-function hashPass(salt, pass){ return sha('portal:' + salt + ':' + pass); }
 function renderPortal(){
   var locked = !S.unlocked;
   $('portal-body').hidden = locked;
   $('lock').hidden = !locked;
   if (!locked) return;
-  var setup = S.secLoaded && !S.sec;
-  $('lock-title').textContent = setup ? 'Crea la contraseña del portal' : 'Portal protegido';
-  $('lk-confirm-wrap').hidden = !setup;
-  $('lk-go').textContent = setup ? 'Guardar contraseña' : 'Entrar';
-  $('lk-go').disabled = !S.secLoaded;
-  setHint('lock-hint', !S.secLoaded ? 'Cargando…' : setup ? 'Elige 6 números. Con ella se protege la entrada al portal.' : 'Escribe la contraseña de 6 dígitos.');
+  $('lk-go').disabled = !S.listo || !S.clave;
+  setHint('lock-hint', !S.listo ? 'Conectando con el servidor…'
+    : !S.clave ? 'Todavía no hay contraseña del portal. Créala desde el menú Checador de tu hoja de Google.'
+    : 'Escribe la contraseña del portal.');
 }
 function startIdle(){ clearTimeout(S.idle); if (S.unlocked) S.idle = setTimeout(lockNow, 5 * 60 * 1000); }
-function lockNow(){ S.unlocked = false; clearTimeout(S.idle); renderPortal(); }
-function afterUnlock(){
-  $('lk-pass').value = ''; $('lk-pass2').value = ''; setHint('lk-msg', '');
-  renderPortal(); startIdle();
+function lockNow(){
+  var t = S.token;
+  S.token = null; S.unlocked = false; S.emps = []; S.rep = null; S.cfgFilled = false; clearTimeout(S.idle);
+  if (t) api('salir', {t: t}, true).catch(noop);
+  $('r-out').replaceChildren(); $('r-csv').disabled = true; $('r-xlsx').disabled = true;
+  $('lk-pass').value = '';
+  renderEmps(); renderPortal();
+}
+async function loadAdmin(){
+  var j = await api('datos', {});
+  S.emps = j.emps;
+  renderEmps(); renderCfg();
 }
 async function lockSubmit(ev){
   ev.preventDefault();
-  if (!S.admin || !S.db || !S.secLoaded) return;
-  var p = $('lk-pass').value.trim();
-  if (!/^\d{6}$/.test(p)) return setHint('lk-msg', 'La contraseña son 6 números.', 'err');
-  if (!S.sec){
-    if (p !== $('lk-pass2').value.trim()) return setHint('lk-msg', 'Las contraseñas no coinciden.', 'err');
-    try {
-      var salt = randSalt();
-      await S.db.doc('seguridad/portal').set({salt: salt, hash: await hashPass(salt, p)});
-      S.unlocked = true; afterUnlock();
-    } catch (e) { setHint('lk-msg', errMsg(e), 'err'); }
-    return;
-  }
-  if (Date.now() < failUntil) return setHint('lk-msg', 'Demasiados intentos. Espera ' + Math.ceil((failUntil - Date.now()) / 1000) + ' s.', 'err');
-  if ((await hashPass(S.sec.salt, p)) === S.sec.hash){ failN = 0; S.unlocked = true; afterUnlock(); return; }
-  failN++;
-  $('lk-pass').value = '';
-  if (failN >= 5){ failN = 0; failUntil = Date.now() + 30000; setHint('lk-msg', 'Contraseña incorrecta. Espera 30 segundos para intentar de nuevo.', 'err'); }
-  else setHint('lk-msg', 'Contraseña incorrecta.', 'err');
+  var p = $('lk-pass').value;
+  if (p.length < 4 || p.length > 10) return setHint('lk-msg', 'La contraseña tiene de 4 a 10 caracteres.', 'err');
+  $('lk-go').disabled = true;
+  try {
+    var j = await api('login', {clave: p}, true);
+    S.token = j.t; S.unlocked = true;
+    await loadAdmin();
+    $('lk-pass').value = ''; setHint('lk-msg', '');
+    renderPortal(); startIdle();
+  } catch (e) {
+    S.token = null; S.unlocked = false;
+    $('lk-pass').value = ''; setHint('lk-msg', errMsg(e), 'err');
+  } finally { $('lk-go').disabled = !S.listo || !S.clave; }
 }
 async function changePass(){
-  if (!S.admin || !S.unlocked || !S.sec || !S.db) return;
-  var cur = $('a-cur').value.trim(), n = $('a-new').value.trim(), n2 = $('a-new2').value.trim();
-  if (!/^\d{6}$/.test(n)) return setHint('p-msg', 'La contraseña nueva son 6 números.', 'err');
+  if (!S.unlocked) return;
+  var cur = $('a-cur').value, n = $('a-new').value, n2 = $('a-new2').value;
+  if (n.length < 4 || n.length > 10) return setHint('p-msg', 'La contraseña nueva tiene de 4 a 10 caracteres.', 'err');
   if (n !== n2) return setHint('p-msg', 'Las contraseñas nuevas no coinciden.', 'err');
   try {
-    if ((await hashPass(S.sec.salt, cur)) !== S.sec.hash) return setHint('p-msg', 'La contraseña actual no es correcta.', 'err');
-    var salt = randSalt();
-    await S.db.doc('seguridad/portal').set({salt: salt, hash: await hashPass(salt, n)});
+    var j = await api('cambiarClave', {actual: cur, nueva: n});
+    S.token = j.t;
     $('a-cur').value = ''; $('a-new').value = ''; $('a-new2').value = '';
     setHint('p-msg', 'Contraseña cambiada.', 'ok');
   } catch (e) { setHint('p-msg', errMsg(e), 'err'); }
@@ -913,26 +879,24 @@ function setPortal(p){
   ['empleados', 'reportes', 'ajustes'].forEach(function(x){ $('p-' + x).hidden = x !== p; });
   document.querySelectorAll('.seg button[data-p]').forEach(function(b){ b.setAttribute('aria-selected', String(b.dataset.p === p)); });
 }
-
 function wire(){
-  $('tab-checador').addEventListener('click', function(){ lockNow(); setTab('checador'); });
+  $('tab-checador').addEventListener('click', function(){ lockNow(); setTab('checador'); sync(); });
   $('tab-portal').addEventListener('click', function(){ setTab('portal'); renderPortal(); startIdle(); });
   document.querySelectorAll('.seg button[data-p]').forEach(function(b){ b.addEventListener('click', function(){ setPortal(b.dataset.p); }); });
   $('lock-now').addEventListener('click', lockNow);
   $('lock-form').addEventListener('submit', lockSubmit);
   $('p-save').addEventListener('click', changePass);
-  document.querySelectorAll('input[type="password"]').forEach(function(i){ i.addEventListener('input', function(){ this.value = this.value.replace(/\D/g, '').slice(0, 6); }); });
   ['pointerdown', 'keydown'].forEach(function(n){ document.addEventListener(n, startIdle, true); });
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden && S.listo && !$('view-checador').hidden) sync(); });
   $('emp-form').addEventListener('submit', saveEmp);
   $('f-gen').addEventListener('click', genPin);
-  $('f-cancel').addEventListener('click', function(){ resetEmpForm(); setHint('f-msg', 'El PIN se guarda cifrado y no se puede volver a ver. Para cambiarlo, edita a la persona y escribe uno nuevo.'); });
+  $('f-cancel').addEventListener('click', function(){ resetEmpForm(); setHint('f-msg', F_HINT); });
   $('f-pin').addEventListener('input', function(){ this.value = this.value.replace(/\D/g, '').slice(0, 4); });
   $('r-run').addEventListener('click', runReport);
   $('r-xlsx').addEventListener('click', exportXlsx);
   $('r-csv').addEventListener('click', exportCsv);
   $('m-form').addEventListener('submit', addManual);
   $('a-save').addEventListener('click', saveCfg);
-  $('d-clear').addEventListener('click', clearDemo);
   document.addEventListener('keydown', function(ev){
     if ($('view-checador').hidden || $('entry').hidden) return;
     var tg = ev.target && ev.target.tagName;
@@ -942,157 +906,20 @@ function wire(){
     else if (ev.key === 'Escape') press('Limpiar');
   });
 }
-
-
-/* ---------- Almacenamiento de prueba (en este navegador) ---------- */
-var LS_KEY = 'checador_demo_v1';
-var cache = {}, persist = true, listeners = [];
-try { localStorage.setItem(LS_KEY + '_t', '1'); localStorage.removeItem(LS_KEY + '_t'); } catch (e) { persist = false; }
-try { cache = JSON.parse(localStorage.getItem(LS_KEY) || '{}') || {}; } catch (e) { cache = {}; }
-function clone(x){ return JSON.parse(JSON.stringify(x)); }
-function newId(){
-  var a = crypto.getRandomValues(new Uint8Array(15)), out = '';
-  for (var i = 0; i < a.length; i++) out += (a[i] % 36).toString(36);
-  return out + Date.now().toString(36).slice(-5);
-}
-function notify(){ listeners.slice().forEach(function(f){ f(); }); }
-function flush(){
-  if (!persist) return;
-  try { localStorage.setItem(LS_KEY, JSON.stringify(cache)); }
-  catch (e) { throw {code: (e && (e.name === 'QuotaExceededError' || e.code === 22)) ? 'quota_exceeded' : 'unavailable'}; }
-}
-window.addEventListener('storage', function(ev){
-  if (ev.key !== LS_KEY) return;
-  try { cache = JSON.parse(ev.newValue || '{}') || {}; } catch (e) { cache = {}; }
-  notify();
-});
-function write(fn){
-  return new Promise(function(res, rej){
-    var backup = JSON.stringify(cache);
-    try { fn(); flush(); }
-    catch (e) { try { cache = JSON.parse(backup); } catch (_) {} return rej(e && e.code ? e : {code: 'unavailable'}); }
-    notify(); res();
-  });
-}
-function docSnap(col, id){
-  var d = cache[col] && cache[col][id];
-  return {id: id, exists: d !== undefined, data: function(){ return d === undefined ? undefined : clone(d); }};
-}
-function cmp(a, op, b){
-  switch (op){
-    case '==': return a === b; case '!=': return a !== b;
-    case '<': return a < b; case '<=': return a <= b;
-    case '>': return a > b; case '>=': return a >= b;
-  }
-  return false;
-}
-function subscribe(fn){
-  listeners.push(fn); setTimeout(fn, 0);
-  return function(){ listeners = listeners.filter(function(x){ return x !== fn; }); };
-}
-function Query(col, f, o, l){ this.col = col; this.f = f || []; this.o = o || null; this.l = l || 0; }
-Query.prototype.where = function(fld, op, v){ return new Query(this.col, this.f.concat([[fld, op, v]]), this.o, this.l); };
-Query.prototype.orderBy = function(fld, dir){ return new Query(this.col, this.f, [fld, dir || 'asc'], this.l); };
-Query.prototype.limit = function(n){ return new Query(this.col, this.f, this.o, n); };
-Query.prototype.run = function(){
-  var rows = cache[this.col] || {}, f = this.f, col = this.col;
-  var ids = Object.keys(rows).filter(function(id){ return f.every(function(c){ return cmp(rows[id][c[0]], c[1], c[2]); }); });
-  if (this.o){
-    var fld = this.o[0], sg = this.o[1] === 'desc' ? -1 : 1;
-    ids.sort(function(a, b){ var x = rows[a][fld], y = rows[b][fld]; return (x < y ? -1 : x > y ? 1 : 0) * sg; });
-  } else ids.sort();
-  if (this.l) ids = ids.slice(0, this.l);
-  var docs = ids.map(function(id){ return docSnap(col, id); });
-  return {docs: docs, size: docs.length, empty: !docs.length};
-};
-Query.prototype.get = function(){ var q = this; return Promise.resolve().then(function(){ return q.run(); }); };
-Query.prototype.onSnapshot = function(next){ var q = this; return subscribe(function(){ next(q.run()); }); };
-function docRef(col, id){
-  return {
-    id: id, path: col + '/' + id,
-    get: function(){ return Promise.resolve(docSnap(col, id)); },
-    set: function(data){ return write(function(){ (cache[col] = cache[col] || {})[id] = clone(data); }); },
-    update: function(data){ return write(function(){
-      if (!cache[col] || !cache[col][id]) throw {code: 'invalid_argument'};
-      Object.assign(cache[col][id], clone(data));
-    }); },
-    delete: function(){ return write(function(){ if (cache[col]) delete cache[col][id]; }); },
-    onSnapshot: function(next){ return subscribe(function(){ next(docSnap(col, id)); }); }
-  };
-}
-function demoDb(){
-  return {
-    doc: function(path){ var p = path.split('/'); return docRef(p[0], p[1]); },
-    collection: function(name){
-      var q = new Query(name);
-      q.doc = function(id){ return docRef(name, id || newId()); };
-      q.add = function(data){ var ref = docRef(name, newId()); return ref.set(data).then(function(){ return ref; }); };
-      return q;
-    }
-  };
-}
-function demoDl(){
-  return {save: function(o){
-    return new Promise(function(res, rej){
-      try {
-        var type = /\.xlsx$/i.test(o.filename) ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv;charset=utf-8';
-        var blob = o.data instanceof Blob ? o.data : new Blob([o.data], {type: type});
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); a.download = o.filename;
-        document.body.appendChild(a); a.click();
-        setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
-        res({status: 'saved'});
-      } catch (e) { rej({code: 'unavailable'}); }
-    });
-  }};
-}
-var clearArmed = false, clearTm = null;
-function clearDemo(){
-  var b = $('d-clear');
-  if (!S.unlocked) return;
-  if (!clearArmed){
-    clearArmed = true; b.textContent = '¿Seguro? Pulsa otra vez para borrar';
-    clearTm = setTimeout(function(){ clearArmed = false; b.textContent = 'Borrar todos los datos de prueba'; }, 4000);
-    return;
-  }
-  clearTimeout(clearTm);
-  cache = {};
-  try { localStorage.removeItem(LS_KEY); } catch (e) {}
-  location.reload();
+function setDefaults(){
+  var hoy = dayKey(nowMs());
+  $('r-desde').value = hoy.slice(0, 8) + '01'; $('r-hasta').value = hoy; $('m-fecha').value = hoy;
 }
 
 async function boot(){
-  buildKeys(); renderPin(); wire(); tick(); setInterval(tick, 1000);
-  var today = new Date();
-  $('r-desde').value = today.getFullYear() + '-' + pad(today.getMonth() + 1) + '-01';
-  $('r-hasta').value = dayKey(Date.now());
-  $('m-fecha').value = dayKey(Date.now());
-  renderFeed(); renderEmps(); renderCfg();
-
-  var db = demoDb();
-  S.db = db; S.dl = demoDl(); S.admin = true;
-  if (!persist) setStatus('Tu navegador no permite guardar datos en este modo. Lo que registres se perderá al cerrar la página.');
-  renderFeed();
-
-  var onErr = function(){ setStatus('Se perdió la conexión con el registro. Recarga la página.'); };
-  if (S.admin){
-    db.doc('seguridad/portal').onSnapshot(function(snap){
-      S.sec = snap.exists ? snap.data() : null; S.secLoaded = true; renderPortal();
-    }, onErr);
+  buildKeys(); renderPin(); wire(); renderFeed(); renderEmps(); renderCfg(); renderPortal(); tick(); setInterval(tick, 1000);
+  if (!API_URL || API_URL.indexOf('http') !== 0){
+    setStatus('Falta conectar la página con tu hoja de Google. Pega la dirección de tu script en la línea API_URL del archivo index.html.');
+    return;
   }
-  db.collection('empleados').onSnapshot(function(snap){
-    S.emps = snap.docs.map(function(d){ return Object.assign({id: d.id}, d.data()); });
-    renderEmps(); renderFeed();
-  }, onErr);
-  db.doc('config/general').onSnapshot(function(snap){
-    var d = snap.exists ? snap.data() : {};
-    S.cfg = {negocio: d.negocio || '', tolerancia: d.tolerancia == null ? 16 : d.tolerancia, comida: d.comida == null ? 60 : d.comida};
-    renderCfg();
-  }, onErr);
-  db.collection('checadas').where('ts', '>=', Date.now() - 36 * 3600e3).orderBy('ts', 'desc').limit(300).onSnapshot(function(snap){
-    S.recent = snap.docs.map(function(d){ return Object.assign({id: d.id}, d.data()); });
-    renderFeed();
-  }, onErr);
+  try { await refresh(); setDefaults(); }
+  catch (e) { setStatus(errMsg(e)); }
+  startPoll();
 }
 boot();
 })();
