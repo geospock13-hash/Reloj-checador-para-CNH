@@ -1,0 +1,1101 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Ccircle cx='17' cy='17' r='14' fill='none' stroke='%23111B25' stroke-width='2.4'/%3E%3Cpath d='M17 8v9l6 4' fill='none' stroke='%23111B25' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Checador de Asistencia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Concepto: reloj checador de pared. Tablero con reloj y teclado PIN junto a la bitácora del día; el portal usa tablas de planilla. Entrada en verde, salida en ámbar, retardo en rojo. */
+:root{
+  --bg:#E8ECF0; --surface:#F6F8FA; --surface2:#DBE2E9; --ink:#111B25; --ink2:#46535F; --line:#C3CCD5;
+  --accent:#2446B8; --accent-ink:#FFFFFF;
+  --in:#0E6B38; --in-bg:#D3EEDF; --out:#8F4A05; --out-bg:#F5E1C4; --late:#A3201A; --late-bg:#F6D8D5;
+  --f-display:'Barlow Condensed','Arial Narrow',sans-serif;
+  --f-body:'IBM Plex Sans',system-ui,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D141B; --surface:#16202A; --surface2:#202C38; --ink:#E7EDF3; --ink2:#9BAAB8; --line:#2D3B49;
+    --accent:#86A2FF; --accent-ink:#0A1230;
+    --in:#5BE08F; --in-bg:#12351F; --out:#F2A950; --out-bg:#3B2a10; --late:#FF8F86; --late-bg:#3F1A17;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D141B; --surface:#16202A; --surface2:#202C38; --ink:#E7EDF3; --ink2:#9BAAB8; --line:#2D3B49;
+  --accent:#86A2FF; --accent-ink:#0A1230;
+  --in:#5BE08F; --in-bg:#12351F; --out:#F2A950; --out-bg:#3B2a10; --late:#FF8F86; --late-bg:#3F1A17;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1100px;margin:0 auto}
+h2{font:700 20px/1.1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;margin:0 0 14px;text-wrap:balance}
+h3{font:600 16px/1.1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);margin:22px 0 8px}
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-bottom:14px;border-bottom:2px solid var(--ink);margin-bottom:16px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand svg{flex:none}
+.brand h1{font:700 28px/1 var(--f-display);letter-spacing:.06em;text-transform:uppercase;margin:0;overflow-wrap:anywhere}
+.tabs{display:flex;gap:6px}
+.tab,.seg button{font:600 15px/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;padding:10px 16px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);border-radius:6px;cursor:pointer}
+.tab[aria-selected="true"],.seg button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.status{margin:0 0 14px;padding:10px 12px;border-radius:6px;background:var(--out-bg);color:var(--out);font-weight:500}
+.status:empty{display:none}
+.panel{background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:20px;min-width:0}
+.panel + .panel{margin-top:16px}
+.kiosk{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.kiosk .panel + .panel{margin-top:0}
+.side{display:grid;gap:16px;align-content:start;min-width:0}
+@media (min-width:860px){.kiosk{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.punch{text-align:center}
+.clock{font:500 clamp(48px,13vw,88px)/1 var(--f-mono);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.clock .sec{font-size:.42em;color:var(--ink2);letter-spacing:0}
+.date{font:500 15px var(--f-body);color:var(--ink2);margin-top:6px}
+.dots{display:flex;gap:14px;justify-content:center;margin:20px 0 8px}
+.dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--ink2)}
+.dot.on{background:var(--ink);border-color:var(--ink)}
+.msg{min-height:1.5em;margin:0;color:var(--ink2);font-weight:500}
+.msg.err{color:var(--late)} .msg.ok{color:var(--in)}
+.keys{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:340px;margin:14px auto 0}
+.key{font:500 28px/1 var(--f-mono);padding:16px 0;border-radius:8px;border:1.5px solid var(--line);background:var(--surface2);color:var(--ink);cursor:pointer}
+.key:active{transform:translateY(1px)}
+.key.fn{font:600 15px/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}
+.ticket{max-width:360px;margin:20px auto 0;border:1.5px solid var(--ink);border-radius:4px;background:var(--bg);overflow:hidden;text-align:center}
+.tk-head{font:700 18px/1 var(--f-display);letter-spacing:.16em;text-transform:uppercase;padding:10px}
+.tk-head.entrada{background:var(--in-bg);color:var(--in)}
+.tk-head.salida{background:var(--out-bg);color:var(--out)}
+.tk-body{padding:14px 16px 16px;display:grid;gap:4px;justify-items:center}
+.tk-name{font:600 26px/1.1 var(--f-display);letter-spacing:.03em;overflow-wrap:anywhere}
+.tk-time{font:500 46px/1.1 var(--f-mono);font-variant-numeric:tabular-nums}
+.tk-date{color:var(--ink2);font-size:14px}
+.tk-note{font-weight:600;margin-top:6px}
+.tk-note.late{color:var(--late)} .tk-note.ok{color:var(--in)}
+.tk-foot{border-top:2px dashed var(--line);padding:10px;font:500 12px var(--f-mono);letter-spacing:.14em;color:var(--ink2);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:baseline;gap:8px;border:1.5px solid var(--in);background:var(--in-bg);color:var(--in);padding:6px 10px;border-radius:6px;font-weight:600}
+.chip small{font:500 12px var(--f-mono);color:var(--ink2)}
+.log{list-style:none;margin:0;padding:0;display:grid}
+.log li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.log li:first-child{border-top:0}
+.log .t{font:500 15px var(--f-mono);font-variant-numeric:tabular-nums}
+.log .n{overflow-wrap:anywhere}
+.empty{color:var(--ink2);margin:0}
+.pill{display:inline-block;font:600 12px/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;padding:4px 8px;border-radius:3px;white-space:nowrap}
+.pill.in{background:var(--in-bg);color:var(--in)}
+.pill.out{background:var(--out-bg);color:var(--out)}
+.pill.late{background:var(--late-bg);color:var(--late)}
+.pill.off{background:var(--surface2);color:var(--ink2)}
+.grid-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font:600 13px/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)}
+input,select{font:inherit;padding:9px 10px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.row{display:flex;gap:8px;min-width:0}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.btn{font:600 15px/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;padding:11px 16px;border-radius:6px;border:1.5px solid var(--accent);background:var(--accent);color:var(--accent-ink);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.danger{background:transparent;border-color:var(--late);color:var(--late)}
+.btn.sm{padding:7px 10px;font-size:13px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.hint{color:var(--ink2);font-size:14px;margin:10px 0 0;max-width:68ch}
+.hint.err{color:var(--late)} .hint.ok{color:var(--in)}
+.tbl-wrap{overflow-x:auto;border:1.5px solid var(--line);border-radius:8px;max-height:520px}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:14px}
+th{font:600 13px/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;text-align:left;padding:11px 12px;background:var(--surface2);color:var(--ink2);white-space:nowrap;position:sticky;top:0}
+td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:middle}
+td.num,th.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
+td.act{display:flex;gap:6px;justify-content:flex-end}
+.muted{color:var(--ink2)}
+.seg .grow{margin-left:auto}
+.bad{color:var(--late);font-weight:600}
+.pill.meal{background:var(--surface2);color:var(--accent)}
+.chip.meal{border-color:var(--accent);background:var(--surface2);color:var(--accent)}
+.tk-head.comida_ini,.tk-head.comida_fin{background:var(--surface2);color:var(--accent)}
+.choice{display:grid;gap:10px;width:100%;margin-top:10px}
+.choice .btn{padding:16px;font-size:18px}
+.lock{max-width:560px}
+.demo-note{margin:0 0 14px;padding:8px 12px;border:1.5px dashed var(--line);border-radius:6px;color:var(--ink2);font-size:14px}
+.demo-note strong{color:var(--ink)}
+@media (prefers-reduced-motion:no-preference){.key{transition:transform .06s}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="17" cy="17" r="14"/><path d="M17 8v9l6 4"/></svg>
+      <h1 id="brand">Checador</h1>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Secciones">
+      <button class="tab" id="tab-checador" role="tab" aria-selected="true">Checador</button>
+      <button class="tab" id="tab-portal" role="tab" aria-selected="false">Portal</button>
+    </nav>
+  </header>
+  <p class="status" id="status" role="status"></p>
+  <p class="demo-note"><strong>Versión de prueba.</strong> Los datos se guardan solo en este navegador de este equipo y no se comparten con otros. El candado del Portal aquí es solo de demostración.</p>
+
+  <main>
+    <section id="view-checador" class="kiosk">
+      <div class="panel punch">
+        <div class="clock"><span id="ck-hm">--:--</span><span class="sec" id="ck-s">:--</span></div>
+        <div class="date" id="date"></div>
+        <div id="entry">
+          <div class="dots" id="dots" aria-hidden="true"></div>
+          <p class="msg" id="msg" aria-live="polite">Escribe tu PIN de 4 dígitos</p>
+          <div class="keys" id="keys"></div>
+        </div>
+        <div class="ticket" id="ticket" hidden></div>
+      </div>
+      <div class="side">
+        <div class="panel"><h2>En turno ahora</h2><div id="present"></div></div>
+        <div class="panel"><h2>Movimientos de hoy</h2><div id="today"></div></div>
+      </div>
+    </section>
+
+    <section id="view-portal" hidden>
+      <div class="panel lock" id="lock" hidden>
+        <h2 id="lock-title">Portal protegido</h2>
+        <p class="hint" id="lock-hint">Cargando…</p>
+        <form id="lock-form" autocomplete="off">
+          <div class="grid-form">
+            <div class="field"><label for="lk-pass">Contraseña de 6 dígitos</label><input id="lk-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></div>
+            <div class="field" id="lk-confirm-wrap" hidden><label for="lk-pass2">Repite la contraseña</label><input id="lk-pass2" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></div>
+          </div>
+          <div class="actions"><button class="btn" id="lk-go" type="submit" disabled>Entrar</button></div>
+        </form>
+        <p class="hint" id="lk-msg"></p>
+      </div>
+      <div id="portal-body" hidden>
+      <div class="seg" role="tablist" aria-label="Portal de administración">
+        <button type="button" data-p="empleados" aria-selected="true">Personal</button>
+        <button type="button" data-p="reportes" aria-selected="false">Reportes</button>
+        <button type="button" data-p="ajustes" aria-selected="false">Ajustes</button>
+        <button type="button" class="btn ghost sm grow" id="lock-now">Bloquear portal</button>
+      </div>
+
+      <div id="p-empleados">
+        <div class="panel">
+          <h2 id="emp-title">Dar de alta a una persona</h2>
+          <form id="emp-form" class="grid-form" autocomplete="off">
+            <div class="field"><label for="f-nombre">Nombre completo</label><input id="f-nombre" maxlength="80" required></div>
+            <div class="field"><label for="f-puesto">Puesto</label><input id="f-puesto" maxlength="60"></div>
+            <div class="field"><label for="f-entrada">Hora de entrada</label><input id="f-entrada" type="time" value="09:00"></div>
+            <div class="field"><label for="f-salida">Hora de salida</label><input id="f-salida" type="time" value="18:00"></div>
+            <div class="field"><label for="f-pin">PIN de 4 dígitos</label>
+              <div class="row"><input id="f-pin" inputmode="numeric" maxlength="4" autocomplete="off"><button type="button" class="btn ghost" id="f-gen">Generar</button></div>
+            </div>
+          </form>
+          <div class="actions">
+            <button class="btn" id="f-save" type="submit" form="emp-form">Dar de alta</button>
+            <button class="btn ghost" id="f-cancel" type="button" hidden>Cancelar</button>
+          </div>
+          <p class="hint" id="f-msg">El PIN se guarda cifrado y no se puede volver a ver. Para cambiarlo, edita a la persona y escribe uno nuevo.</p>
+        </div>
+        <div class="panel">
+          <h2>Personal registrado</h2>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>Nombre</th><th>Puesto</th><th>Horario</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="emp-body"></tbody>
+          </table></div>
+          <p class="empty" id="emp-empty">Todavía no hay personal. Da de alta a la primera persona arriba.</p>
+        </div>
+      </div>
+
+      <div id="p-reportes" hidden>
+        <div class="panel">
+          <h2>Reporte de asistencia</h2>
+          <div class="grid-form">
+            <div class="field"><label for="r-desde">Desde</label><input id="r-desde" type="date"></div>
+            <div class="field"><label for="r-hasta">Hasta</label><input id="r-hasta" type="date"></div>
+            <div class="field"><label for="r-emp">Persona</label><select id="r-emp"></select></div>
+          </div>
+          <div class="actions">
+            <button class="btn" id="r-run" type="button">Generar reporte</button>
+            <button class="btn ghost" id="r-xlsx" type="button" disabled>Descargar para Google Sheets (.xlsx)</button>
+            <button class="btn ghost" id="r-csv" type="button" disabled>CSV por día</button>
+          </div>
+          <p class="hint" id="r-msg">El archivo .xlsx trae tres hojas: Resumen, Por día (con entrada, comida y salida) y Checadas. Las horas trabajadas no incluyen la comida. Los retardos y las comidas de más de una hora salen marcados en color. Para abrirlo en Google Sheets, súbelo a tu Google Drive y elige Abrir con Hojas de cálculo.</p>
+          <div id="r-out"></div>
+        </div>
+        <div class="panel">
+          <h2>Agregar checada manual</h2>
+          <form id="m-form" class="grid-form" autocomplete="off">
+            <div class="field"><label for="m-emp">Persona</label><select id="m-emp"></select></div>
+            <div class="field"><label for="m-fecha">Fecha</label><input id="m-fecha" type="date" required></div>
+            <div class="field"><label for="m-hora">Hora</label><input id="m-hora" type="time" required></div>
+            <div class="field"><label for="m-tipo">Tipo</label><select id="m-tipo"><option value="entrada">Entrada</option><option value="comida_ini">Salida a comida</option><option value="comida_fin">Regreso de comida</option><option value="salida">Salida</option></select></div>
+            <div class="field"><label for="m-nota">Nota</label><input id="m-nota" maxlength="120" placeholder="Olvidó checar"></div>
+          </form>
+          <div class="actions"><button class="btn" type="submit" form="m-form">Agregar checada</button></div>
+          <p class="hint" id="m-msg">Sirve para corregir olvidos. La checada queda marcada como manual en el reporte.</p>
+        </div>
+      </div>
+
+      <div id="p-ajustes" hidden>
+        <div class="panel">
+          <h2>Ajustes</h2>
+          <div class="grid-form">
+            <div class="field"><label for="a-negocio">Nombre del negocio</label><input id="a-negocio" maxlength="60" placeholder="Mi negocio"></div>
+            <div class="field"><label for="a-comida">Duración de la comida (minutos)</label><input id="a-comida" type="number" min="15" max="240" value="60"></div>
+            <div class="field"><label for="a-tol">Retardo a partir del minuto</label><input id="a-tol" type="number" min="0" max="120" value="16"></div>
+          </div>
+          <div class="actions"><button class="btn" id="a-save" type="button">Guardar ajustes</button></div>
+          <p class="hint" id="a-msg">Hay retardo cuando la primera entrada del día llega con esa cantidad de minutos de tardanza o más. Con 16, llegar a las 9:16 ya es retardo y a las 9:15 no. Si la comida dura más que la duración indicada, se marca como comida excedida.</p>
+        </div>
+        <div class="panel">
+          <h2>Contraseña del portal</h2>
+          <div class="grid-form">
+            <div class="field"><label for="a-cur">Contraseña actual</label><input id="a-cur" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></div>
+            <div class="field"><label for="a-new">Contraseña nueva</label><input id="a-new" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></div>
+            <div class="field"><label for="a-new2">Repite la nueva</label><input id="a-new2" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></div>
+          </div>
+          <div class="actions"><button class="btn" id="p-save" type="button">Cambiar contraseña</button></div>
+          <p class="hint" id="p-msg">El portal se bloquea solo después de 5 minutos sin usarlo. Cinco intentos fallidos esperan 30 segundos.</p>
+        </div>
+        <div class="panel">
+          <h2>Datos de prueba</h2>
+          <p class="hint" style="margin-top:0">Todo lo que registres vive solo en este navegador. Puedes borrarlo para empezar de cero.</p>
+          <div class="actions"><button class="btn danger" id="d-clear" type="button">Borrar todos los datos de prueba</button></div>
+          <p class="hint" id="d-msg"></p>
+        </div>
+      </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<script>
+(function(){
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+function h(tag, attrs){
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs){
+    var v = attrs[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k.indexOf('on') === 0) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (var i = 2; i < arguments.length; i++){
+    var kids = [].concat(arguments[i]);
+    for (var j = 0; j < kids.length; j++){
+      var kid = kids[j];
+      if (kid == null || kid === false) continue;
+      e.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+    }
+  }
+  return e;
+}
+var pad = function(n){ return String(n).padStart(2, '0'); };
+var dayKey = function(ts){ var d = new Date(ts); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+var hm = function(ts){ var d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+var hms = function(ts){ var d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); };
+var toMin = function(s){ var m = /^(\d{1,2}):(\d{2})$/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+var fmtDur = function(min){ var t = Math.round(min); return Math.floor(t / 60) + ' h ' + pad(t % 60) + ' min'; };
+var fmtHM = function(min){ var t = Math.round(min); return Math.floor(t / 60) + ':' + pad(t % 60); };
+var round2 = function(x){ return Math.round(x * 100) / 100; };
+var longDate = function(ts){ var t = new Date(ts).toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'long', year:'numeric'}); return t.charAt(0).toUpperCase() + t.slice(1); };
+function parseDay(s, plus){ var p = (s || '').split('-').map(Number); if (p.length !== 3 || p.some(isNaN)) return NaN; return new Date(p[0], p[1] - 1, p[2] + (plus || 0)).getTime(); }
+var HALF_DAY = 16 * 3600e3;
+var TIPO = {entrada:{t:'Entrada', c:'in'}, comida_ini:{t:'A comer', c:'meal'}, comida_fin:{t:'Regreso', c:'meal'}, salida:{t:'Salida', c:'out'}};
+var TIPO_LARGO = {entrada:'Entrada', comida_ini:'Salida a comida', comida_fin:'Regreso de comida', salida:'Salida'};
+var TK_HEAD = {entrada:'Entrada registrada', comida_ini:'Salida a comida', comida_fin:'Regreso de comida', salida:'Salida registrada'};
+var esRetardo = function(tarde){ var t = +S.cfg.tolerancia; return tarde > 0 && tarde >= (t > 0 ? t : 1); };
+var limComida = function(){ return +S.cfg.comida > 0 ? +S.cfg.comida : 60; };
+var tipoT = function(t){ return (TIPO[t] || {t: t}).t; };
+var tipoC = function(t){ return (TIPO[t] || {c: 'off'}).c; };
+
+var S = {
+  db: null, dl: null, admin: false, emps: [], recent: [], cfg: {negocio: '', tolerancia: 16, comida: 60},
+  sec: null, secLoaded: false, unlocked: false, idle: null,
+  cfgFilled: false, pin: '', busy: false, tt: null, mt: null, editId: null, rep: null, day: dayKey(Date.now())
+};
+function empMap(){ var m = {}; S.emps.forEach(function(e){ m[e.id] = e; }); return m; }
+function empName(r){ var e = empMap()[r.emp]; return (e && e.nombre) || r.nombre || '(persona eliminada)'; }
+function activeEmps(){ return S.emps.filter(function(e){ return e.activo !== false; }); }
+
+async function sha(s){
+  var b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(b)).map(function(x){ return x.toString(16).padStart(2, '0'); }).join('');
+}
+function errMsg(e){
+  var c = e && e.code;
+  if (c === 'quota_exceeded') return 'El registro está lleno. Descarga el reporte y avisa al administrador para limpiar checadas antiguas.';
+  if (c === 'invalid_argument') return 'Tu cuenta no tiene permiso para esta acción.';
+  if (c === 'revoked') return 'Se retiró tu acceso a esta página.';
+  return 'No se pudo guardar. Intenta de nuevo.';
+}
+function setStatus(t){ $('status').textContent = t || ''; }
+function setHint(id, text, kind){ var e = $(id); e.textContent = text; e.className = 'hint' + (kind ? ' ' + kind : ''); }
+
+/* ---------- Reloj ---------- */
+function tick(){
+  var now = Date.now(), d = new Date(now);
+  $('ck-hm').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
+  $('ck-s').textContent = ':' + pad(d.getSeconds());
+  $('date').textContent = longDate(now);
+  var k = dayKey(now);
+  if (k !== S.day){ S.day = k; renderFeed(); }
+}
+
+/* ---------- Teclado PIN ---------- */
+function buildKeys(){
+  var k = $('keys');
+  ['1','2','3','4','5','6','7','8','9','Borrar','0','Limpiar'].forEach(function(x){
+    k.append(h('button', {type:'button', class:'key' + (x.length > 1 ? ' fn' : ''), onclick:function(){ press(x); }}, x));
+  });
+}
+function renderPin(){
+  var d = $('dots'); d.replaceChildren();
+  for (var i = 0; i < 4; i++) d.append(h('span', {class:'dot' + (i < S.pin.length ? ' on' : '')}));
+}
+function setMsg(text, kind){
+  var m = $('msg'); m.textContent = text; m.className = 'msg' + (kind ? ' ' + kind : '');
+  clearTimeout(S.mt);
+  if (kind) S.mt = setTimeout(function(){ m.textContent = 'Escribe tu PIN de 4 dígitos'; m.className = 'msg'; }, 3500);
+}
+function press(x){
+  if (S.busy) return;
+  if (x === 'Borrar') S.pin = S.pin.slice(0, -1);
+  else if (x === 'Limpiar') S.pin = '';
+  else if (S.pin.length < 4) S.pin += x;
+  renderPin();
+  if (S.pin.length === 4) punch();
+}
+
+async function findByPin(pin){
+  for (var i = 0; i < S.emps.length; i++){
+    var e = S.emps[i];
+    if (e.pinHash && (await sha(e.id + ':' + pin)) === e.pinHash) return e;
+  }
+  return null;
+}
+
+async function punch(){
+  if (S.busy) return;
+  if (!S.db){ setMsg('Sin conexión con el registro.', 'err'); S.pin = ''; renderPin(); return; }
+  S.busy = true;
+  var pin = S.pin;
+  try {
+    var emp = await findByPin(pin);
+    if (!emp){ setMsg('PIN incorrecto', 'err'); return; }
+    if (emp.activo === false){ setMsg('Esta persona está dada de baja', 'err'); return; }
+    var now = Date.now(), today = dayKey(now);
+    var snap = await S.db.collection('checadas').where('emp', '==', emp.id).orderBy('ts', 'desc').limit(12).get();
+    var recs = snap.docs.map(function(d){ return d.data(); });
+    var last = recs[0];
+    if (last && now - last.ts < 30000){
+      setMsg('Ya checaste hace ' + Math.max(1, Math.round((now - last.ts) / 1000)) + ' s', 'err'); return;
+    }
+    var fresh = last && now - last.ts < HALF_DAY;
+    var working = fresh && (last.tipo === 'entrada' || last.tipo === 'comida_fin');
+    var onLunch = fresh && last.tipo === 'comida_ini';
+    var hadLunch = recs.some(function(r){ return r.dia === today && r.tipo === 'comida_ini'; });
+    if (working && !hadLunch){ showChoice(emp, recs); return; }
+    await commit(emp, onLunch ? 'comida_fin' : working ? 'salida' : 'entrada', recs);
+  } catch (e) {
+    setMsg(errMsg(e), 'err');
+  } finally {
+    S.busy = false; S.pin = ''; renderPin();
+  }
+}
+
+async function commit(emp, tipo, recs){
+  var now = Date.now(), today = dayKey(now);
+  var rec = {emp: emp.id, nombre: emp.nombre, tipo: tipo, ts: now, dia: today, manual: false};
+  var ref = await S.db.collection('checadas').add(rec);
+  var nota = '', flag = '', last = recs[0];
+  if (tipo === 'entrada'){
+    var yaEntro = recs.some(function(r){ return r.dia === today && r.tipo === 'entrada'; });
+    var prog = toMin(emp.entrada);
+    if (yaEntro){ nota = 'Reingreso registrado'; }
+    else if (prog != null){
+      var d = new Date(now), tarde = d.getHours() * 60 + d.getMinutes() - prog;
+      if (esRetardo(tarde)){ nota = 'Retardo de ' + tarde + ' min'; flag = 'late'; }
+      else { nota = 'Puntual'; flag = 'ok'; }
+    }
+  } else if (tipo === 'comida_ini'){
+    nota = 'Tu comida empezó a las ' + hm(now);
+  } else if (tipo === 'comida_fin'){
+    if (last && last.tipo === 'comida_ini'){
+      var mc = (now - last.ts) / 60000;
+      if (mc > limComida()){ nota = 'Comida de ' + fmtDur(mc) + ': excediste ' + Math.round(mc - limComida()) + ' min'; flag = 'late'; }
+      else { nota = 'Comida de ' + fmtDur(mc); flag = 'ok'; }
+    }
+  } else {
+    var todays = recs.filter(function(r){ return r.dia === today; }).concat([rec]);
+    var dd = buildReport(todays).dias.filter(function(x){ return x.emp === emp.id; }).pop();
+    if (dd){ nota = 'Trabajaste ' + fmtDur(dd.min); flag = 'ok'; }
+  }
+  showTicket({tipo: tipo, nombre: emp.nombre, ts: now, folio: ref.id.slice(-5).toUpperCase(), nota: nota, flag: flag});
+}
+
+function showChoice(emp, recs){
+  var k = $('ticket');
+  k.replaceChildren(
+    h('div', {class:'tk-head comida_ini'}, 'Hola, ' + emp.nombre),
+    h('div', {class:'tk-body'},
+      h('div', {class:'tk-date', style:'text-transform:none'}, '¿Qué vas a registrar?'),
+      h('div', {class:'choice'},
+        h('button', {type:'button', class:'btn', onclick:function(){ choose(emp, 'comida_ini', recs); }}, 'Salir a comer'),
+        h('button', {type:'button', class:'btn ghost', onclick:function(){ choose(emp, 'salida', recs); }}, 'Registrar mi salida'),
+        h('button', {type:'button', class:'btn ghost', onclick:hideTicket}, 'Cancelar')))
+  );
+  $('entry').hidden = true; k.hidden = false;
+  clearTimeout(S.tt); S.tt = setTimeout(hideTicket, 20000);
+}
+async function choose(emp, tipo, recs){
+  if (S.busy) return;
+  S.busy = true;
+  try { await commit(emp, tipo, recs); }
+  catch (e) { hideTicket(); setMsg(errMsg(e), 'err'); }
+  finally { S.busy = false; }
+}
+
+function showTicket(t){
+  var k = $('ticket');
+  k.replaceChildren(
+    h('div', {class:'tk-head ' + t.tipo}, TK_HEAD[t.tipo] || 'Registrado'),
+    h('div', {class:'tk-body'},
+      h('div', {class:'tk-name'}, t.nombre),
+      h('div', {class:'tk-time'}, hms(t.ts)),
+      h('div', {class:'tk-date'}, longDate(t.ts)),
+      t.nota ? h('div', {class:'tk-note ' + t.flag}, t.nota) : null
+    ),
+    h('div', {class:'tk-foot'}, h('span', null, 'FOLIO ' + t.folio), h('button', {type:'button', class:'btn ghost sm', onclick:hideTicket}, 'Listo'))
+  );
+  $('entry').hidden = true; k.hidden = false;
+  clearTimeout(S.tt); S.tt = setTimeout(hideTicket, 7000);
+}
+function hideTicket(){ clearTimeout(S.tt); $('ticket').hidden = true; $('entry').hidden = false; }
+
+/* ---------- Bitácora del día ---------- */
+function renderFeed(){
+  var present = $('present'), today = $('today');
+  var seen = {}, here = [], lunch = [];
+  S.recent.forEach(function(r){
+    if (r.emp in seen) return;
+    seen[r.emp] = 1;
+    if (Date.now() - r.ts >= HALF_DAY) return;
+    if (r.tipo === 'entrada' || r.tipo === 'comida_fin') here.push(r);
+    else if (r.tipo === 'comida_ini') lunch.push(r);
+  });
+  var chip = function(r, cls){ return h('span', {class:'chip' + cls}, empName(r), h('small', null, 'desde ' + hm(r.ts))); };
+  if (!S.emps.length){
+    present.replaceChildren(h('p', {class:'empty'}, S.admin ? 'Aún no hay personal. Abre Portal y da de alta a la primera persona.' : 'Aún no hay personal registrado. Pide al administrador que te dé de alta.'));
+  } else if (!here.length && !lunch.length){
+    present.replaceChildren(h('p', {class:'empty'}, 'Nadie ha checado entrada.'));
+  } else {
+    var parts = [];
+    if (here.length) parts.push(h('div', {class:'chips'}, here.map(function(r){ return chip(r, ''); })));
+    if (lunch.length) parts.push(h('p', {class:'muted', style:'margin:12px 0 6px'}, 'En comida'), h('div', {class:'chips'}, lunch.map(function(r){ return chip(r, ' meal'); })));
+    present.replaceChildren.apply(present, parts);
+  }
+  var k = dayKey(Date.now());
+  var rows = S.recent.filter(function(r){ return r.dia === k; });
+  if (!rows.length) today.replaceChildren(h('p', {class:'empty'}, 'Aún no hay movimientos hoy.'));
+  else today.replaceChildren(h('ul', {class:'log'}, rows.map(function(r){
+    return h('li', null, h('span', {class:'t'}, hm(r.ts)), h('span', {class:'n'}, empName(r)),
+      h('span', {class:'pill ' + tipoC(r.tipo)}, tipoT(r.tipo)));
+  })));
+}
+
+/* ---------- Portal: personal ---------- */
+function renderEmps(){
+  var body = $('emp-body');
+  var list = S.emps.slice().sort(function(a, b){ return (a.nombre || '').localeCompare(b.nombre || '', 'es'); });
+  $('emp-empty').hidden = list.length > 0;
+  body.replaceChildren.apply(body, list.map(function(e){
+    var activo = e.activo !== false;
+    return h('tr', null,
+      h('td', null, e.nombre),
+      h('td', {class:'muted'}, e.puesto || '—'),
+      h('td', {class:'num'}, (e.entrada || '--:--') + ' – ' + (e.salida || '--:--')),
+      h('td', null, h('span', {class:'pill ' + (activo ? 'in' : 'off')}, activo ? 'Activo' : 'Baja')),
+      h('td', {class:'act'},
+        h('button', {type:'button', class:'btn ghost sm', onclick:function(){ editEmp(e.id); }}, 'Editar'),
+        h('button', {type:'button', class:'btn sm ' + (activo ? 'danger' : 'ghost'), onclick:function(){ toggleEmp(e.id); }}, activo ? 'Dar de baja' : 'Reactivar')
+      ));
+  }));
+  fillSelect($('r-emp'), true);
+  fillSelect($('m-emp'), false);
+}
+function fillSelect(sel, withAll){
+  var cur = sel.value;
+  var opts = (withAll ? [h('option', {value:''}, 'Todo el personal')] : [])
+    .concat(S.emps.filter(function(e){ return withAll || e.activo !== false; })
+      .sort(function(a, b){ return (a.nombre || '').localeCompare(b.nombre || '', 'es'); })
+      .map(function(e){ return h('option', {value:e.id}, e.nombre); }));
+  sel.replaceChildren.apply(sel, opts);
+  sel.value = cur;
+  if (sel.value !== cur || (!sel.value && !withAll && sel.options.length)) sel.selectedIndex = sel.options.length ? 0 : -1;
+}
+function resetEmpForm(){
+  S.editId = null;
+  $('emp-form').reset();
+  $('f-entrada').value = '09:00'; $('f-salida').value = '18:00';
+  $('emp-title').textContent = 'Dar de alta a una persona';
+  $('f-save').textContent = 'Dar de alta';
+  $('f-cancel').hidden = true;
+  $('f-pin').placeholder = '';
+}
+function editEmp(id){
+  var e = empMap()[id]; if (!e) return;
+  S.editId = id;
+  $('f-nombre').value = e.nombre || ''; $('f-puesto').value = e.puesto || '';
+  $('f-entrada').value = e.entrada || ''; $('f-salida').value = e.salida || ''; $('f-pin').value = '';
+  $('f-pin').placeholder = 'Vacío = conservar';
+  $('emp-title').textContent = 'Editar a ' + e.nombre;
+  $('f-save').textContent = 'Guardar cambios';
+  $('f-cancel').hidden = false;
+  setHint('f-msg', 'Deja el PIN vacío para conservar el actual.');
+  $('f-nombre').focus();
+  $('emp-form').scrollIntoView({block:'center'});
+}
+async function toggleEmp(id){
+  var e = empMap()[id]; if (!e || !S.admin || !S.unlocked) return;
+  try { await S.db.doc('empleados/' + id).update({activo: e.activo === false}); }
+  catch (err) { setHint('f-msg', errMsg(err), 'err'); }
+}
+async function pinTaken(pin, exceptId){
+  for (var i = 0; i < S.emps.length; i++){
+    var e = S.emps[i];
+    if (e.id === exceptId || e.activo === false || !e.pinHash) continue;
+    if ((await sha(e.id + ':' + pin)) === e.pinHash) return true;
+  }
+  return false;
+}
+async function genPin(){
+  for (var i = 0; i < 40; i++){
+    var p = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    if (!(await pinTaken(p, S.editId))){ $('f-pin').value = p; return; }
+  }
+}
+async function saveEmp(ev){
+  ev.preventDefault();
+  if (!S.admin || !S.unlocked || !S.db) return;
+  var nombre = $('f-nombre').value.trim(), pin = $('f-pin').value.trim();
+  if (!nombre) return setHint('f-msg', 'Escribe el nombre de la persona.', 'err');
+  if (pin && !/^\d{4}$/.test(pin)) return setHint('f-msg', 'El PIN debe tener exactamente 4 números.', 'err');
+  if (!S.editId && !pin) return setHint('f-msg', 'Escribe un PIN de 4 dígitos o usa Generar.', 'err');
+  try {
+    if (pin && await pinTaken(pin, S.editId)) return setHint('f-msg', 'Ese PIN ya lo usa otra persona. Prueba con otro.', 'err');
+    var data = {nombre: nombre, puesto: $('f-puesto').value.trim(), entrada: $('f-entrada').value, salida: $('f-salida').value};
+    if (S.editId){
+      if (pin) data.pinHash = await sha(S.editId + ':' + pin);
+      await S.db.doc('empleados/' + S.editId).update(data);
+      setHint('f-msg', 'Cambios guardados.', 'ok');
+    } else {
+      var ref = S.db.collection('empleados').doc();
+      data.pinHash = await sha(ref.id + ':' + pin); data.activo = true; data.creado = Date.now();
+      await ref.set(data);
+      setHint('f-msg', nombre + ' quedó dada de alta. Entrega el PIN ' + pin + ' a la persona; ya no se podrá ver después.', 'ok');
+    }
+    var keep = $('f-msg').textContent, kind = 'ok';
+    resetEmpForm(); setHint('f-msg', keep, kind);
+  } catch (e) { setHint('f-msg', errMsg(e), 'err'); }
+}
+
+/* ---------- Portal: reportes ---------- */
+function buildReport(recs){
+  var em = empMap(), tol = +S.cfg.tolerancia || 0, now = Date.now(), by = {}, dias = [];
+  recs.forEach(function(r){ (by[r.emp] = by[r.emp] || []).push(r); });
+  Object.keys(by).forEach(function(eid){
+    var list = by[eid].slice().sort(function(a, b){ return a.ts - b.ts; });
+    var e = em[eid], nombre = (e && e.nombre) || list[0].nombre || '(persona eliminada)';
+    var days = {};
+    var D = function(k){ return days[k] || (days[k] = {emp:eid, nombre:nombre, dia:k, primera:null, comidaIni:null, comidaFin:null, ultima:null, min:0, comidaMin:0, inc:false, curso:false}); };
+    var cur = null, lunch = null;
+    list.forEach(function(r){
+      if (r.tipo === 'entrada'){
+        if (cur) D(cur.dia).inc = true;
+        if (lunch){ D(lunch.dia).inc = true; lunch = null; }
+        cur = {ts: r.ts, dia: r.dia};
+        var d = D(r.dia); if (d.primera == null) d.primera = r.ts;
+      } else if (r.tipo === 'comida_ini'){
+        if (cur){
+          var dc = D(cur.dia); dc.min += (r.ts - cur.ts) / 60000;
+          if (dc.comidaIni == null) dc.comidaIni = r.ts;
+          lunch = {ts: r.ts, dia: cur.dia}; cur = null;
+        } else { D(r.dia).inc = true; }
+      } else if (r.tipo === 'comida_fin'){
+        if (lunch){
+          var dl = D(lunch.dia); dl.comidaMin += (r.ts - lunch.ts) / 60000; dl.comidaFin = r.ts;
+          cur = {ts: r.ts, dia: lunch.dia}; lunch = null;
+        } else { D(r.dia).inc = true; }
+      } else {
+        if (cur){ var ds = D(cur.dia); ds.min += (r.ts - cur.ts) / 60000; ds.ultima = r.ts; cur = null; }
+        else if (lunch){ D(lunch.dia).ultima = r.ts; lunch = null; }
+        else { var d3 = D(r.dia); d3.inc = true; d3.ultima = r.ts; }
+      }
+    });
+    if (cur){ var d4 = D(cur.dia); if (now - cur.ts < HALF_DAY) d4.curso = true; else d4.inc = true; }
+    if (lunch){ var d5 = D(lunch.dia); if (now - lunch.ts < HALF_DAY) d5.curso = true; else d5.inc = true; }
+    Object.keys(days).sort().forEach(function(k){
+      var d = days[k], retardo = 0;
+      d.entradaProg = (e && e.entrada) || ''; d.salidaProg = (e && e.salida) || '';
+      if (d.primera != null && e && toMin(e.entrada) != null){
+        var dt = new Date(d.primera), tarde = dt.getHours() * 60 + dt.getMinutes() - toMin(e.entrada);
+        if (esRetardo(tarde)) retardo = tarde;
+      }
+      d.retardo = retardo; d.exceso = d.comidaMin > 0 ? Math.max(0, Math.round(d.comidaMin - limComida())) : 0; dias.push(d);
+    });
+  });
+  dias.sort(function(a, b){ return a.dia < b.dia ? -1 : a.dia > b.dia ? 1 : a.nombre.localeCompare(b.nombre, 'es'); });
+  var rs = {};
+  dias.forEach(function(d){
+    var r = rs[d.emp] || (rs[d.emp] = {nombre:d.nombre, dias:0, min:0, retardos:0, incompletas:0, excesos:0, excesoMin:0});
+    if (d.primera != null) r.dias++;
+    r.min += d.min; if (d.retardo > 0) r.retardos++; if (d.inc) r.incompletas++; if (d.exceso > 0){ r.excesos++; r.excesoMin += d.exceso; }
+  });
+  var resumen = Object.keys(rs).map(function(k){
+    var r = rs[k];
+    return {nombre:r.nombre, dias:r.dias, min:r.min, horas:round2(r.min / 60), prom:r.dias ? round2(r.min / 60 / r.dias) : 0, retardos:r.retardos, incompletas:r.incompletas, excesos:r.excesos, excesoMin:r.excesoMin};
+  }).sort(function(a, b){ return a.nombre.localeCompare(b.nombre, 'es'); });
+  return {dias: dias, resumen: resumen};
+}
+function estadoDia(d){
+  var s = d.inc ? 'Incompleta' : d.curso ? 'En curso' : 'Completa';
+  if (d.retardo > 0) s += ' · Retardo ' + d.retardo + ' min';
+  if (d.exceso > 0) s += ' · Comida excedida +' + d.exceso + ' min';
+  return s;
+}
+async function runReport(){
+  if (!S.db || !S.unlocked) return;
+  var d1 = parseDay($('r-desde').value), d2 = parseDay($('r-hasta').value, 1);
+  if (isNaN(d1) || isNaN(d2) || d2 <= d1) return setHint('r-msg', 'Elige un rango de fechas válido.', 'err');
+  $('r-run').disabled = true;
+  try {
+    var q = S.db.collection('checadas').where('ts', '>=', d1).where('ts', '<', d2);
+    var eid = $('r-emp').value;
+    if (eid) q = q.where('emp', '==', eid);
+    var snap = await q.orderBy('ts').limit(1000).get();
+    var recs = snap.docs.map(function(d){ return Object.assign({id: d.id}, d.data()); });
+    var b = buildReport(recs);
+    S.rep = {desde: $('r-desde').value, hasta: $('r-hasta').value, resumen: b.resumen, dias: b.dias, regs: recs.slice().sort(function(a, c){ return c.ts - a.ts; })};
+    renderReport();
+    setHint('r-msg', snap.size >= 1000 ? 'Se cargaron las primeras 1000 checadas del rango. Acorta el rango para ver el resto.' : 'Reporte generado con ' + recs.length + ' checadas.', snap.size >= 1000 ? 'err' : 'ok');
+  } catch (e) { setHint('r-msg', 'No se pudo generar el reporte. Intenta de nuevo.', 'err'); }
+  finally { $('r-run').disabled = false; }
+}
+function table(heads, rows, numCols){
+  numCols = numCols || [];
+  return h('div', {class:'tbl-wrap'}, h('table', null,
+    h('thead', null, h('tr', null, heads.map(function(t, i){ return h('th', {class: numCols.indexOf(i) >= 0 ? 'num' : ''}, t); }))),
+    h('tbody', null, rows)));
+}
+function renderReport(){
+  var r = S.rep, out = $('r-out');
+  $('r-csv').disabled = !r || !r.dias.length;
+  $('r-xlsx').disabled = !r || !r.regs.length;
+  if (!r || !r.regs.length){ out.replaceChildren(h('p', {class:'empty', style:'margin-top:14px'}, 'No hay checadas en ese rango.')); return; }
+  var res = table(['Persona', 'Días', 'Horas', 'Prom. por día', 'Retardos', 'Comidas excedidas', 'Incompletas'],
+    r.resumen.map(function(x){
+      return h('tr', null, h('td', null, x.nombre), h('td', {class:'num'}, x.dias), h('td', {class:'num'}, fmtHM(x.min)),
+        h('td', {class:'num'}, x.dias ? fmtHM(x.min / x.dias) : '—'), h('td', {class:'num' + (x.retardos ? ' bad' : '')}, x.retardos), h('td', {class:'num' + (x.excesos ? ' bad' : '')}, x.excesos), h('td', {class:'num'}, x.incompletas));
+    }), [1, 2, 3, 4, 5, 6]);
+  var t = function(v){ return v != null ? hm(v) : '—'; };
+  var det = table(['Fecha', 'Persona', 'Entrada', 'A comer', 'Regreso', 'Comida', 'Salida', 'Horas', 'Estado'],
+    r.dias.map(function(d){
+      return h('tr', null, h('td', {class:'num', style:'text-align:left'}, d.dia), h('td', null, d.nombre),
+        h('td', {class:'num' + (d.retardo > 0 ? ' bad' : '')}, t(d.primera)), h('td', {class:'num'}, t(d.comidaIni)), h('td', {class:'num'}, t(d.comidaFin)),
+        h('td', {class:'num' + (d.exceso > 0 ? ' bad' : '')}, d.comidaMin ? fmtHM(d.comidaMin) : '—'), h('td', {class:'num'}, t(d.ultima)),
+        h('td', {class:'num'}, fmtHM(d.min)),
+        h('td', null, h('span', {class:'pill ' + (d.inc || d.retardo > 0 || d.exceso > 0 ? 'late' : d.curso ? 'out' : 'in')}, estadoDia(d))));
+    }), [2, 3, 4, 5, 6, 7]);
+  var shown = r.regs.slice(0, 300);
+  var reg = table(['Fecha', 'Hora', 'Persona', 'Tipo', 'Origen', ''],
+    shown.map(function(x){
+      return h('tr', null, h('td', {class:'num', style:'text-align:left'}, x.dia), h('td', {class:'num'}, hm(x.ts)), h('td', null, empName(x)),
+        h('td', null, h('span', {class:'pill ' + tipoC(x.tipo)}, tipoT(x.tipo))),
+        h('td', {class:'muted'}, x.manual ? 'Manual' + (x.nota ? ': ' + x.nota : '') : 'Reloj'),
+        h('td', {class:'act'}, delBtn(x.id)));
+    }), [1]);
+  out.replaceChildren(
+    h('h3', null, 'Resumen por persona'), res,
+    h('h3', null, 'Detalle por día'), det,
+    h('h3', null, 'Registro de checadas'), reg,
+    r.regs.length > 300 ? h('p', {class:'hint'}, 'Se muestran las 300 más recientes. El archivo descargable incluye todas.') : null
+  );
+}
+function delBtn(id){
+  var armed = false, tm = null;
+  var b = h('button', {type:'button', class:'btn danger sm'}, 'Eliminar');
+  b.addEventListener('click', async function(){
+    if (!armed){
+      armed = true; b.textContent = '¿Seguro?';
+      tm = setTimeout(function(){ armed = false; b.textContent = 'Eliminar'; }, 4000);
+      return;
+    }
+    clearTimeout(tm); b.disabled = true;
+    try { await S.db.doc('checadas/' + id).delete(); await runReport(); }
+    catch (e) { b.disabled = false; armed = false; b.textContent = 'Eliminar'; setHint('r-msg', errMsg(e), 'err'); }
+  });
+  return b;
+}
+async function addManual(ev){
+  ev.preventDefault();
+  if (!S.admin || !S.unlocked || !S.db) return;
+  var emp = $('m-emp').value, f = $('m-fecha').value, t = $('m-hora').value;
+  if (!emp || !f || !t) return setHint('m-msg', 'Completa persona, fecha y hora.', 'err');
+  var p = f.split('-').map(Number), q = t.split(':').map(Number);
+  var ts = new Date(p[0], p[1] - 1, p[2], q[0], q[1]).getTime();
+  var e = empMap()[emp];
+  try {
+    await S.db.collection('checadas').add({emp: emp, nombre: e ? e.nombre : '', tipo: $('m-tipo').value, ts: ts, dia: dayKey(ts), manual: true, nota: $('m-nota').value.trim()});
+    $('m-nota').value = '';
+    setHint('m-msg', 'Checada agregada.', 'ok');
+    if (S.rep) runReport();
+  } catch (err) { setHint('m-msg', errMsg(err), 'err'); }
+}
+
+/* ---------- Exportar ---------- */
+function csvCell(v){
+  var s = v == null ? '' : String(v);
+  if (/^[=+\-@]/.test(s)) s = "'" + s;
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+async function saveFile(filename, data){
+  if (!S.dl) return setHint('r-msg', 'Tu navegador no permite descargar desde esta página.', 'err');
+  try { await S.dl.save({filename: filename, data: data}); setHint('r-msg', 'Archivo listo: ' + filename, 'ok'); }
+  catch (e) { if (!e || e.code !== 'declined') setHint('r-msg', 'No se pudo descargar el archivo.', 'err'); }
+}
+var DET_HEAD = ['Fecha', 'Persona', 'Entrada programada', 'Hora de entrada', 'Salida a comida', 'Regreso de comida', 'Minutos de comida', 'Exceso de comida (min)', 'Hora de salida', 'Horas trabajadas', 'Minutos de retardo', 'Estado'];
+function detRows(r){
+  var t = function(v){ return v != null ? hm(v) : ''; };
+  return r.dias.map(function(d){
+    return [d.dia, d.nombre, d.entradaProg || '', t(d.primera), t(d.comidaIni), t(d.comidaFin), d.comidaMin ? Math.round(d.comidaMin) : '', d.exceso > 0 ? d.exceso : '', t(d.ultima), round2(d.min / 60), d.retardo, estadoDia(d)];
+  });
+}
+function exportCsv(){
+  var r = S.rep; if (!r) return;
+  var rows = [DET_HEAD].concat(detRows(r));
+  saveFile('asistencia_' + r.desde + '_' + r.hasta + '.csv', '﻿' + rows.map(function(x){ return x.map(csvCell).join(','); }).join('\r\n'));
+}
+async function exportXlsx(){
+  var r = S.rep; if (!r) return;
+  if (typeof ExcelJS === 'undefined') return setHint('r-msg', 'No se pudo preparar el archivo .xlsx en este navegador. Usa el botón CSV por día.', 'err');
+  var RED = {fill: 'FFF8D0CC', font: 'FF9B1C14'}, AMBER = {fill: 'FFFCE3B0', font: 'FF8A4B00'};
+  var mark = function(cell, c){
+    cell.fill = {type: 'pattern', pattern: 'solid', fgColor: {argb: c.fill}};
+    cell.font = {bold: true, color: {argb: c.font}};
+  };
+  var wb = new ExcelJS.Workbook();
+  var sheet = function(name, head, rows, widths){
+    var ws = wb.addWorksheet(name, {views: [{state: 'frozen', ySplit: 1}]});
+    ws.addRow(head);
+    rows.forEach(function(x){ ws.addRow(x); });
+    widths.forEach(function(w, i){ ws.getColumn(i + 1).width = w; });
+    var hr = ws.getRow(1);
+    hr.height = 32;
+    hr.eachCell(function(c){
+      c.fill = {type: 'pattern', pattern: 'solid', fgColor: {argb: 'FF1F2F46'}};
+      c.font = {bold: true, color: {argb: 'FFFFFFFF'}};
+      c.alignment = {vertical: 'middle', wrapText: true};
+    });
+    return ws;
+  };
+  var res = sheet('Resumen', ['Persona', 'Días trabajados', 'Horas trabajadas (sin comida)', 'Promedio horas por día', 'Retardos', 'Comidas excedidas', 'Minutos de comida de más', 'Jornadas incompletas'],
+    r.resumen.map(function(x){ return [x.nombre, x.dias, x.horas, x.prom, x.retardos, x.excesos, x.excesoMin, x.incompletas]; }), [28, 16, 26, 22, 10, 18, 24, 20]);
+  r.resumen.forEach(function(x, i){
+    var row = res.getRow(i + 2);
+    if (x.retardos > 0) mark(row.getCell(5), RED);
+    if (x.excesos > 0){ mark(row.getCell(6), AMBER); mark(row.getCell(7), AMBER); }
+  });
+  var det = sheet('Por día', DET_HEAD, detRows(r), [12, 28, 18, 15, 16, 18, 16, 20, 14, 16, 18, 44]);
+  r.dias.forEach(function(d, i){
+    var row = det.getRow(i + 2);
+    if (d.retardo > 0){ mark(row.getCell(4), RED); mark(row.getCell(11), RED); }
+    if (d.exceso > 0){ mark(row.getCell(7), AMBER); mark(row.getCell(8), AMBER); }
+    if (d.retardo > 0 || d.exceso > 0 || d.inc) mark(row.getCell(12), d.inc || d.retardo > 0 ? RED : AMBER);
+  });
+  sheet('Checadas', ['Fecha', 'Hora', 'Persona', 'Tipo', 'Origen', 'Nota'],
+    r.regs.slice().sort(function(a, b){ return a.ts - b.ts; }).map(function(x){ return [x.dia, hm(x.ts), empName(x), TIPO_LARGO[x.tipo] || x.tipo, x.manual ? 'Manual' : 'Reloj', x.nota || '']; }),
+    [12, 8, 28, 18, 10, 30]);
+  try {
+    var buf = await wb.xlsx.writeBuffer();
+    saveFile('asistencia_' + r.desde + '_' + r.hasta + '.xlsx', buf);
+  } catch (e) { setHint('r-msg', 'No se pudo preparar el archivo .xlsx. Usa el botón CSV por día.', 'err'); }
+}
+
+/* ---------- Ajustes ---------- */
+function renderCfg(){
+  $('brand').textContent = S.cfg.negocio || 'Checador';
+  if (!S.cfgFilled){ $('a-negocio').value = S.cfg.negocio || ''; $('a-tol').value = S.cfg.tolerancia; $('a-comida').value = S.cfg.comida; S.cfgFilled = true; }
+}
+async function saveCfg(){
+  if (!S.admin || !S.unlocked || !S.db) return;
+  var tol = Math.max(0, Math.min(120, parseInt($('a-tol').value, 10) || 0));
+  try {
+    var com = Math.max(15, Math.min(240, parseInt($('a-comida').value, 10) || 60));
+    await S.db.doc('config/general').set({negocio: $('a-negocio').value.trim(), tolerancia: tol, comida: com});
+    setHint('a-msg', 'Ajustes guardados.', 'ok');
+  } catch (e) { setHint('a-msg', errMsg(e), 'err'); }
+}
+
+/* ---------- Candado del portal ---------- */
+var failN = 0, failUntil = 0;
+function randSalt(){ return Array.from(crypto.getRandomValues(new Uint8Array(8))).map(function(x){ return x.toString(16).padStart(2, '0'); }).join(''); }
+function hashPass(salt, pass){ return sha('portal:' + salt + ':' + pass); }
+function renderPortal(){
+  var locked = !S.unlocked;
+  $('portal-body').hidden = locked;
+  $('lock').hidden = !locked;
+  if (!locked) return;
+  var setup = S.secLoaded && !S.sec;
+  $('lock-title').textContent = setup ? 'Crea la contraseña del portal' : 'Portal protegido';
+  $('lk-confirm-wrap').hidden = !setup;
+  $('lk-go').textContent = setup ? 'Guardar contraseña' : 'Entrar';
+  $('lk-go').disabled = !S.secLoaded;
+  setHint('lock-hint', !S.secLoaded ? 'Cargando…' : setup ? 'Elige 6 números. Con ella se protege la entrada al portal.' : 'Escribe la contraseña de 6 dígitos.');
+}
+function startIdle(){ clearTimeout(S.idle); if (S.unlocked) S.idle = setTimeout(lockNow, 5 * 60 * 1000); }
+function lockNow(){ S.unlocked = false; clearTimeout(S.idle); renderPortal(); }
+function afterUnlock(){
+  $('lk-pass').value = ''; $('lk-pass2').value = ''; setHint('lk-msg', '');
+  renderPortal(); startIdle();
+}
+async function lockSubmit(ev){
+  ev.preventDefault();
+  if (!S.admin || !S.db || !S.secLoaded) return;
+  var p = $('lk-pass').value.trim();
+  if (!/^\d{6}$/.test(p)) return setHint('lk-msg', 'La contraseña son 6 números.', 'err');
+  if (!S.sec){
+    if (p !== $('lk-pass2').value.trim()) return setHint('lk-msg', 'Las contraseñas no coinciden.', 'err');
+    try {
+      var salt = randSalt();
+      await S.db.doc('seguridad/portal').set({salt: salt, hash: await hashPass(salt, p)});
+      S.unlocked = true; afterUnlock();
+    } catch (e) { setHint('lk-msg', errMsg(e), 'err'); }
+    return;
+  }
+  if (Date.now() < failUntil) return setHint('lk-msg', 'Demasiados intentos. Espera ' + Math.ceil((failUntil - Date.now()) / 1000) + ' s.', 'err');
+  if ((await hashPass(S.sec.salt, p)) === S.sec.hash){ failN = 0; S.unlocked = true; afterUnlock(); return; }
+  failN++;
+  $('lk-pass').value = '';
+  if (failN >= 5){ failN = 0; failUntil = Date.now() + 30000; setHint('lk-msg', 'Contraseña incorrecta. Espera 30 segundos para intentar de nuevo.', 'err'); }
+  else setHint('lk-msg', 'Contraseña incorrecta.', 'err');
+}
+async function changePass(){
+  if (!S.admin || !S.unlocked || !S.sec || !S.db) return;
+  var cur = $('a-cur').value.trim(), n = $('a-new').value.trim(), n2 = $('a-new2').value.trim();
+  if (!/^\d{6}$/.test(n)) return setHint('p-msg', 'La contraseña nueva son 6 números.', 'err');
+  if (n !== n2) return setHint('p-msg', 'Las contraseñas nuevas no coinciden.', 'err');
+  try {
+    if ((await hashPass(S.sec.salt, cur)) !== S.sec.hash) return setHint('p-msg', 'La contraseña actual no es correcta.', 'err');
+    var salt = randSalt();
+    await S.db.doc('seguridad/portal').set({salt: salt, hash: await hashPass(salt, n)});
+    $('a-cur').value = ''; $('a-new').value = ''; $('a-new2').value = '';
+    setHint('p-msg', 'Contraseña cambiada.', 'ok');
+  } catch (e) { setHint('p-msg', errMsg(e), 'err'); }
+}
+
+/* ---------- Navegación ---------- */
+function setTab(t){
+  ['checador', 'portal'].forEach(function(x){
+    $('view-' + x).hidden = x !== t;
+    $('tab-' + x).setAttribute('aria-selected', String(x === t));
+  });
+}
+function setPortal(p){
+  ['empleados', 'reportes', 'ajustes'].forEach(function(x){ $('p-' + x).hidden = x !== p; });
+  document.querySelectorAll('.seg button[data-p]').forEach(function(b){ b.setAttribute('aria-selected', String(b.dataset.p === p)); });
+}
+
+function wire(){
+  $('tab-checador').addEventListener('click', function(){ lockNow(); setTab('checador'); });
+  $('tab-portal').addEventListener('click', function(){ setTab('portal'); renderPortal(); startIdle(); });
+  document.querySelectorAll('.seg button[data-p]').forEach(function(b){ b.addEventListener('click', function(){ setPortal(b.dataset.p); }); });
+  $('lock-now').addEventListener('click', lockNow);
+  $('lock-form').addEventListener('submit', lockSubmit);
+  $('p-save').addEventListener('click', changePass);
+  document.querySelectorAll('input[type="password"]').forEach(function(i){ i.addEventListener('input', function(){ this.value = this.value.replace(/\D/g, '').slice(0, 6); }); });
+  ['pointerdown', 'keydown'].forEach(function(n){ document.addEventListener(n, startIdle, true); });
+  $('emp-form').addEventListener('submit', saveEmp);
+  $('f-gen').addEventListener('click', genPin);
+  $('f-cancel').addEventListener('click', function(){ resetEmpForm(); setHint('f-msg', 'El PIN se guarda cifrado y no se puede volver a ver. Para cambiarlo, edita a la persona y escribe uno nuevo.'); });
+  $('f-pin').addEventListener('input', function(){ this.value = this.value.replace(/\D/g, '').slice(0, 4); });
+  $('r-run').addEventListener('click', runReport);
+  $('r-xlsx').addEventListener('click', exportXlsx);
+  $('r-csv').addEventListener('click', exportCsv);
+  $('m-form').addEventListener('submit', addManual);
+  $('a-save').addEventListener('click', saveCfg);
+  $('d-clear').addEventListener('click', clearDemo);
+  document.addEventListener('keydown', function(ev){
+    if ($('view-checador').hidden || $('entry').hidden) return;
+    var tg = ev.target && ev.target.tagName;
+    if (tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA' || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    if (/^[0-9]$/.test(ev.key)) press(ev.key);
+    else if (ev.key === 'Backspace') press('Borrar');
+    else if (ev.key === 'Escape') press('Limpiar');
+  });
+}
+
+
+/* ---------- Almacenamiento de prueba (en este navegador) ---------- */
+var LS_KEY = 'checador_demo_v1';
+var cache = {}, persist = true, listeners = [];
+try { localStorage.setItem(LS_KEY + '_t', '1'); localStorage.removeItem(LS_KEY + '_t'); } catch (e) { persist = false; }
+try { cache = JSON.parse(localStorage.getItem(LS_KEY) || '{}') || {}; } catch (e) { cache = {}; }
+function clone(x){ return JSON.parse(JSON.stringify(x)); }
+function newId(){
+  var a = crypto.getRandomValues(new Uint8Array(15)), out = '';
+  for (var i = 0; i < a.length; i++) out += (a[i] % 36).toString(36);
+  return out + Date.now().toString(36).slice(-5);
+}
+function notify(){ listeners.slice().forEach(function(f){ f(); }); }
+function flush(){
+  if (!persist) return;
+  try { localStorage.setItem(LS_KEY, JSON.stringify(cache)); }
+  catch (e) { throw {code: (e && (e.name === 'QuotaExceededError' || e.code === 22)) ? 'quota_exceeded' : 'unavailable'}; }
+}
+window.addEventListener('storage', function(ev){
+  if (ev.key !== LS_KEY) return;
+  try { cache = JSON.parse(ev.newValue || '{}') || {}; } catch (e) { cache = {}; }
+  notify();
+});
+function write(fn){
+  return new Promise(function(res, rej){
+    var backup = JSON.stringify(cache);
+    try { fn(); flush(); }
+    catch (e) { try { cache = JSON.parse(backup); } catch (_) {} return rej(e && e.code ? e : {code: 'unavailable'}); }
+    notify(); res();
+  });
+}
+function docSnap(col, id){
+  var d = cache[col] && cache[col][id];
+  return {id: id, exists: d !== undefined, data: function(){ return d === undefined ? undefined : clone(d); }};
+}
+function cmp(a, op, b){
+  switch (op){
+    case '==': return a === b; case '!=': return a !== b;
+    case '<': return a < b; case '<=': return a <= b;
+    case '>': return a > b; case '>=': return a >= b;
+  }
+  return false;
+}
+function subscribe(fn){
+  listeners.push(fn); setTimeout(fn, 0);
+  return function(){ listeners = listeners.filter(function(x){ return x !== fn; }); };
+}
+function Query(col, f, o, l){ this.col = col; this.f = f || []; this.o = o || null; this.l = l || 0; }
+Query.prototype.where = function(fld, op, v){ return new Query(this.col, this.f.concat([[fld, op, v]]), this.o, this.l); };
+Query.prototype.orderBy = function(fld, dir){ return new Query(this.col, this.f, [fld, dir || 'asc'], this.l); };
+Query.prototype.limit = function(n){ return new Query(this.col, this.f, this.o, n); };
+Query.prototype.run = function(){
+  var rows = cache[this.col] || {}, f = this.f, col = this.col;
+  var ids = Object.keys(rows).filter(function(id){ return f.every(function(c){ return cmp(rows[id][c[0]], c[1], c[2]); }); });
+  if (this.o){
+    var fld = this.o[0], sg = this.o[1] === 'desc' ? -1 : 1;
+    ids.sort(function(a, b){ var x = rows[a][fld], y = rows[b][fld]; return (x < y ? -1 : x > y ? 1 : 0) * sg; });
+  } else ids.sort();
+  if (this.l) ids = ids.slice(0, this.l);
+  var docs = ids.map(function(id){ return docSnap(col, id); });
+  return {docs: docs, size: docs.length, empty: !docs.length};
+};
+Query.prototype.get = function(){ var q = this; return Promise.resolve().then(function(){ return q.run(); }); };
+Query.prototype.onSnapshot = function(next){ var q = this; return subscribe(function(){ next(q.run()); }); };
+function docRef(col, id){
+  return {
+    id: id, path: col + '/' + id,
+    get: function(){ return Promise.resolve(docSnap(col, id)); },
+    set: function(data){ return write(function(){ (cache[col] = cache[col] || {})[id] = clone(data); }); },
+    update: function(data){ return write(function(){
+      if (!cache[col] || !cache[col][id]) throw {code: 'invalid_argument'};
+      Object.assign(cache[col][id], clone(data));
+    }); },
+    delete: function(){ return write(function(){ if (cache[col]) delete cache[col][id]; }); },
+    onSnapshot: function(next){ return subscribe(function(){ next(docSnap(col, id)); }); }
+  };
+}
+function demoDb(){
+  return {
+    doc: function(path){ var p = path.split('/'); return docRef(p[0], p[1]); },
+    collection: function(name){
+      var q = new Query(name);
+      q.doc = function(id){ return docRef(name, id || newId()); };
+      q.add = function(data){ var ref = docRef(name, newId()); return ref.set(data).then(function(){ return ref; }); };
+      return q;
+    }
+  };
+}
+function demoDl(){
+  return {save: function(o){
+    return new Promise(function(res, rej){
+      try {
+        var type = /\.xlsx$/i.test(o.filename) ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv;charset=utf-8';
+        var blob = o.data instanceof Blob ? o.data : new Blob([o.data], {type: type});
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = o.filename;
+        document.body.appendChild(a); a.click();
+        setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+        res({status: 'saved'});
+      } catch (e) { rej({code: 'unavailable'}); }
+    });
+  }};
+}
+var clearArmed = false, clearTm = null;
+function clearDemo(){
+  var b = $('d-clear');
+  if (!S.unlocked) return;
+  if (!clearArmed){
+    clearArmed = true; b.textContent = '¿Seguro? Pulsa otra vez para borrar';
+    clearTm = setTimeout(function(){ clearArmed = false; b.textContent = 'Borrar todos los datos de prueba'; }, 4000);
+    return;
+  }
+  clearTimeout(clearTm);
+  cache = {};
+  try { localStorage.removeItem(LS_KEY); } catch (e) {}
+  location.reload();
+}
+
+async function boot(){
+  buildKeys(); renderPin(); wire(); tick(); setInterval(tick, 1000);
+  var today = new Date();
+  $('r-desde').value = today.getFullYear() + '-' + pad(today.getMonth() + 1) + '-01';
+  $('r-hasta').value = dayKey(Date.now());
+  $('m-fecha').value = dayKey(Date.now());
+  renderFeed(); renderEmps(); renderCfg();
+
+  var db = demoDb();
+  S.db = db; S.dl = demoDl(); S.admin = true;
+  if (!persist) setStatus('Tu navegador no permite guardar datos en este modo. Lo que registres se perderá al cerrar la página.');
+  renderFeed();
+
+  var onErr = function(){ setStatus('Se perdió la conexión con el registro. Recarga la página.'); };
+  if (S.admin){
+    db.doc('seguridad/portal').onSnapshot(function(snap){
+      S.sec = snap.exists ? snap.data() : null; S.secLoaded = true; renderPortal();
+    }, onErr);
+  }
+  db.collection('empleados').onSnapshot(function(snap){
+    S.emps = snap.docs.map(function(d){ return Object.assign({id: d.id}, d.data()); });
+    renderEmps(); renderFeed();
+  }, onErr);
+  db.doc('config/general').onSnapshot(function(snap){
+    var d = snap.exists ? snap.data() : {};
+    S.cfg = {negocio: d.negocio || '', tolerancia: d.tolerancia == null ? 16 : d.tolerancia, comida: d.comida == null ? 60 : d.comida};
+    renderCfg();
+  }, onErr);
+  db.collection('checadas').where('ts', '>=', Date.now() - 36 * 3600e3).orderBy('ts', 'desc').limit(300).onSnapshot(function(snap){
+    S.recent = snap.docs.map(function(d){ return Object.assign({id: d.id}, d.data()); });
+    renderFeed();
+  }, onErr);
+}
+boot();
+})();
+</script>
+</body>
+</html>
