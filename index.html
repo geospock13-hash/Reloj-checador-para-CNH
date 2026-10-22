@@ -411,16 +411,34 @@ function press(x){
   if (S.pin.length === 4) punch();
 }
 
+/* Ubicación (GPS) del dispositivo al checar */
+function getPos(){
+  return new Promise(function(resolve){
+    if (!navigator.geolocation) return resolve(null);
+    var done = false, fin = function(v){ if (!done){ done = true; resolve(v); } };
+    setTimeout(function(){ fin(null); }, 12000);
+    try {
+      navigator.geolocation.getCurrentPosition(function(p){
+        fin({lat: p.coords.latitude, lng: p.coords.longitude, prec: p.coords.accuracy});
+      }, function(){ fin(null); }, {enableHighAccuracy: true, timeout: 10000, maximumAge: 30000});
+    } catch (e) { fin(null); }
+  });
+}
+function posData(pos){ return pos ? {lat: pos.lat, lng: pos.lng, prec: pos.prec} : {}; }
+function mapUrl(x){ return x && x.lat && x.lng ? 'https://www.google.com/maps?q=' + encodeURIComponent(x.lat + ',' + x.lng) : ''; }
+
 async function punch(){
   if (S.busy) return;
   if (!S.listo){ setMsg('Todavía no hay conexión con el servidor.', 'err'); S.pin = ''; renderPin(); return; }
   S.busy = true;
   var pin = S.pin;
-  setMsg('Registrando…');
+  setMsg('Obteniendo tu ubicación…');
   try {
-    var j = await api('checar', {pin: pin}, true);
+    var pos = await getPos();
+    setMsg('Registrando…');
+    var j = await api('checar', Object.assign({pin: pin}, posData(pos)), true);
     setMsg(MSG0);
-    if (j.choice) showChoice(j.nombre, pin);
+    if (j.choice) showChoice(j.nombre, pin, pos);
     else { showTicket(j.ticket); sync(); }
   } catch (e) {
     setMsg(errMsg(e), 'err');
@@ -428,25 +446,25 @@ async function punch(){
     S.busy = false; S.pin = ''; renderPin();
   }
 }
-function showChoice(nombre, pin){
+function showChoice(nombre, pin, pos){
   var k = $('ticket');
   k.replaceChildren(
     h('div', {class:'tk-head comida_ini'}, 'Hola, ' + nombre),
     h('div', {class:'tk-body'},
       h('div', {class:'tk-date', style:'text-transform:none'}, '¿Qué vas a registrar?'),
       h('div', {class:'choice'},
-        h('button', {type:'button', class:'btn', onclick:function(){ choose(pin, 'comida_ini'); }}, 'Salir a comer'),
-        h('button', {type:'button', class:'btn ghost', onclick:function(){ choose(pin, 'salida'); }}, 'Registrar mi salida'),
+        h('button', {type:'button', class:'btn', onclick:function(){ choose(pin, 'comida_ini', pos); }}, 'Salir a comer'),
+        h('button', {type:'button', class:'btn ghost', onclick:function(){ choose(pin, 'salida', pos); }}, 'Registrar mi salida'),
         h('button', {type:'button', class:'btn ghost', onclick:hideTicket}, 'Cancelar')))
   );
   $('entry').hidden = true; k.hidden = false;
   clearTimeout(S.tt); S.tt = setTimeout(hideTicket, 20000);
 }
-async function choose(pin, accion){
+async function choose(pin, accion, pos){
   if (S.busy) return;
   S.busy = true;
   $('ticket').querySelectorAll('button').forEach(function(b){ b.disabled = true; });
-  try { var j = await api('checar', {pin: pin, accion: accion}, true); showTicket(j.ticket); sync(); }
+  try { var j = await api('checar', Object.assign({pin: pin, accion: accion}, posData(pos)), true); showTicket(j.ticket); sync(); }
   catch (e) { hideTicket(); setMsg(errMsg(e), 'err'); }
   finally { S.busy = false; }
 }
@@ -458,7 +476,8 @@ function showTicket(t){
       h('div', {class:'tk-name'}, t.nombre),
       h('div', {class:'tk-time'}, hms(t.ts)),
       h('div', {class:'tk-date'}, longDate(t.ts)),
-      t.nota ? h('div', {class:'tk-note ' + t.flag}, t.nota) : null
+      t.nota ? h('div', {class:'tk-note ' + t.flag}, t.nota) : null,
+      h('div', {class:'tk-date', style:'text-transform:none;margin-top:8px'}, t.ubic ? '📍 Ubicación registrada' : 'Sin ubicación (permite el acceso a tu ubicación en el navegador)')
     ),
     h('div', {class:'tk-foot'}, h('span', null, 'FOLIO ' + t.folio), h('button', {type:'button', class:'btn ghost sm', onclick:hideTicket}, 'Listo'))
   );
@@ -593,7 +612,7 @@ function buildReport(recs){
         if (cur) D(cur.dia).inc = true;
         if (lunch){ D(lunch.dia).inc = true; lunch = null; }
         cur = {ts: r.ts, dia: r.dia};
-        var d = D(r.dia); if (d.primera == null) d.primera = r.ts;
+        var d = D(r.dia); if (d.primera == null){ d.primera = r.ts; d.ubIn = r; }
       } else if (r.tipo === 'comida_ini'){
         if (cur){
           var dc = D(cur.dia); dc.min += (r.ts - cur.ts) / 60000;
@@ -606,8 +625,8 @@ function buildReport(recs){
           cur = {ts: r.ts, dia: lunch.dia}; lunch = null;
         } else { D(r.dia).inc = true; }
       } else {
-        if (cur){ var ds = D(cur.dia); ds.min += (r.ts - cur.ts) / 60000; ds.ultima = r.ts; cur = null; }
-        else if (lunch){ D(lunch.dia).ultima = r.ts; lunch = null; }
+        if (cur){ var ds = D(cur.dia); ds.min += (r.ts - cur.ts) / 60000; ds.ultima = r.ts; ds.ubOut = r; cur = null; }
+        else if (lunch){ var dq = D(lunch.dia); dq.ultima = r.ts; dq.ubOut = r; lunch = null; }
         else { var d3 = D(r.dia); d3.inc = true; d3.ultima = r.ts; }
       }
     });
@@ -682,11 +701,12 @@ function renderReport(){
         h('td', null, h('span', {class:'pill ' + (d.inc || d.retardo > 0 || d.exceso > 0 ? 'late' : d.curso ? 'out' : 'in')}, estadoDia(d))));
     }), [2, 3, 4, 5, 6, 7]);
   var shown = r.regs.slice(0, 300);
-  var reg = table(['Fecha', 'Hora', 'Persona', 'Tipo', 'Origen', ''],
+  var reg = table(['Fecha', 'Hora', 'Persona', 'Tipo', 'Origen', 'Ubicación', ''],
     shown.map(function(x){
       return h('tr', null, h('td', {class:'num', style:'text-align:left'}, x.dia), h('td', {class:'num'}, hm(x.ts)), h('td', null, empName(x)),
         h('td', null, h('span', {class:'pill ' + tipoC(x.tipo)}, tipoT(x.tipo))),
         h('td', {class:'muted'}, x.manual ? 'Manual' + (x.nota ? ': ' + x.nota : '') : 'Reloj'),
+        h('td', null, mapUrl(x) ? h('a', {href: mapUrl(x), target: '_blank', rel: 'noopener noreferrer'}, 'Ver mapa') : h('span', {class:'muted'}, '—')),
         h('td', {class:'act'}, delBtn(x.id)));
     }), [1]);
   out.replaceChildren(
@@ -742,11 +762,11 @@ function saveFile(filename, data){
     setHint('r-msg', 'Archivo listo: ' + filename, 'ok');
   } catch (e) { setHint('r-msg', 'No se pudo descargar el archivo.', 'err'); }
 }
-var DET_HEAD = ['Fecha', 'Persona', 'Entrada programada', 'Hora de entrada', 'Salida a comida', 'Regreso de comida', 'Minutos de comida', 'Exceso de comida (min)', 'Hora de salida', 'Horas trabajadas', 'Minutos de retardo', 'Estado'];
+var DET_HEAD = ['Fecha', 'Persona', 'Entrada programada', 'Hora de entrada', 'Salida a comida', 'Regreso de comida', 'Minutos de comida', 'Exceso de comida (min)', 'Hora de salida', 'Horas trabajadas', 'Minutos de retardo', 'Estado', 'Ubicación de entrada', 'Ubicación de salida'];
 function detRows(r){
   var t = function(v){ return v != null ? hm(v) : ''; };
   return r.dias.map(function(d){
-    return [d.dia, d.nombre, d.entradaProg || '', t(d.primera), t(d.comidaIni), t(d.comidaFin), d.comidaMin ? Math.round(d.comidaMin) : '', d.exceso > 0 ? d.exceso : '', t(d.ultima), round2(d.min / 60), d.retardo, estadoDia(d)];
+    return [d.dia, d.nombre, d.entradaProg || '', t(d.primera), t(d.comidaIni), t(d.comidaFin), d.comidaMin ? Math.round(d.comidaMin) : '', d.exceso > 0 ? d.exceso : '', t(d.ultima), round2(d.min / 60), d.retardo, estadoDia(d), mapUrl(d.ubIn), mapUrl(d.ubOut)];
   });
 }
 function exportCsv(){
@@ -784,16 +804,29 @@ async function exportXlsx(){
     if (x.retardos > 0) mark(row.getCell(5), RED);
     if (x.excesos > 0){ mark(row.getCell(6), AMBER); mark(row.getCell(7), AMBER); }
   });
-  var det = sheet('Por día', DET_HEAD, detRows(r), [12, 28, 18, 15, 16, 18, 16, 20, 14, 16, 18, 44]);
+  var det = sheet('Por día', DET_HEAD, detRows(r), [12, 28, 18, 15, 16, 18, 16, 20, 14, 16, 18, 44, 30, 30]);
   r.dias.forEach(function(d, i){
     var row = det.getRow(i + 2);
     if (d.retardo > 0){ mark(row.getCell(4), RED); mark(row.getCell(11), RED); }
     if (d.exceso > 0){ mark(row.getCell(7), AMBER); mark(row.getCell(8), AMBER); }
     if (d.retardo > 0 || d.exceso > 0 || d.inc) mark(row.getCell(12), d.inc || d.retardo > 0 ? RED : AMBER);
   });
-  sheet('Checadas', ['Fecha', 'Hora', 'Persona', 'Tipo', 'Origen', 'Nota'],
-    r.regs.slice().sort(function(a, b){ return a.ts - b.ts; }).map(function(x){ return [x.dia, hm(x.ts), empName(x), TIPO_LARGO[x.tipo] || x.tipo, x.manual ? 'Manual' : 'Reloj', x.nota || '']; }),
-    [12, 8, 28, 18, 10, 30]);
+  var regsOrd = r.regs.slice().sort(function(a, b){ return a.ts - b.ts; });
+  var wsC = sheet('Checadas', ['Fecha', 'Hora', 'Persona', 'Tipo', 'Origen', 'Nota', 'Ubicación (clic para abrir en Google Maps)', 'Latitud', 'Longitud', 'Precisión (m)'],
+    regsOrd.map(function(x){ return [x.dia, hm(x.ts), empName(x), TIPO_LARGO[x.tipo] || x.tipo, x.manual ? 'Manual' : 'Reloj', x.nota || '', mapUrl(x) ? x.lat + ', ' + x.lng : (x.manual ? '' : 'Sin ubicación'), x.lat || '', x.lng || '', x.prec || '']; }),
+    [12, 8, 28, 18, 10, 30, 36, 12, 12, 12]);
+  regsOrd.forEach(function(x, i){
+    if (mapUrl(x)) wsC.getRow(i + 2).getCell(7).value = {text: x.lat + ', ' + x.lng, hyperlink: mapUrl(x)};
+  });
+  var linkFont = {color: {argb: 'FF1155CC'}, underline: true};
+  r.dias.forEach(function(d, i){
+    [[13, d.ubIn], [14, d.ubOut]].forEach(function(p){
+      if (!mapUrl(p[1])) return;
+      var c = det.getRow(i + 2).getCell(p[0]);
+      c.value = {text: p[1].lat + ', ' + p[1].lng, hyperlink: mapUrl(p[1])}; c.font = linkFont;
+    });
+  });
+  regsOrd.forEach(function(x, i){ if (mapUrl(x)) wsC.getRow(i + 2).getCell(7).font = linkFont; });
   try {
     var buf = await wb.xlsx.writeBuffer();
     saveFile('asistencia_' + r.desde + '_' + r.hasta + '.xlsx', buf);
