@@ -406,24 +406,39 @@ function press(x){
   if (S.busy) return;
   if (x === 'Borrar') S.pin = S.pin.slice(0, -1);
   else if (x === 'Limpiar') S.pin = '';
-  else if (S.pin.length < 4) S.pin += x;
+  else if (S.pin.length < 4){ if (!S.pin.length) warmPos(); S.pin += x; }
   renderPin();
   if (S.pin.length === 4) punch();
 }
 
 /* Ubicación (GPS) del dispositivo al checar */
-function getPos(){
+var GEO = {pos: null, why: '', pend: null};
+function geoTry(alta, ms){
   return new Promise(function(resolve){
-    if (!navigator.geolocation) return resolve(null);
-    var done = false, fin = function(v){ if (!done){ done = true; resolve(v); } };
-    setTimeout(function(){ fin(null); }, 12000);
     try {
       navigator.geolocation.getCurrentPosition(function(p){
-        fin({lat: p.coords.latitude, lng: p.coords.longitude, prec: p.coords.accuracy});
-      }, function(){ fin(null); }, {enableHighAccuracy: true, timeout: 10000, maximumAge: 30000});
-    } catch (e) { fin(null); }
+        resolve({ok: true, pos: {lat: p.coords.latitude, lng: p.coords.longitude, prec: p.coords.accuracy, t: Date.now()}});
+      }, function(e){ resolve({ok: false, code: e && e.code}); }, {enableHighAccuracy: alta, timeout: ms, maximumAge: alta ? 0 : 60000});
+    } catch (e) { resolve({ok: false, code: 2}); }
   });
 }
+/* Pide la ubicación (primero precisa, luego aproximada). El tiempo del aviso de permiso no cuenta. */
+function getPos(){
+  if (GEO.pend) return GEO.pend;
+  if (!navigator.geolocation){ GEO.why = 'Este navegador no tiene ubicación.'; return Promise.resolve(null); }
+  GEO.pend = (async function(){
+    var r = await geoTry(true, 10000);
+    if (!r.ok && r.code !== 1) r = await geoTry(false, 15000);
+    GEO.pend = null;
+    if (r.ok){ GEO.pos = r.pos; GEO.why = ''; return r.pos; }
+    GEO.why = r.code === 1 ? 'Permiso de ubicación negado. Actívalo en la configuración del sitio y del teléfono.' : 'No se pudo obtener la ubicación. Revisa que la ubicación del teléfono esté encendida.';
+    // si hay una ubicación reciente (menos de 5 min) se usa esa
+    return GEO.pos && Date.now() - GEO.pos.t < 300000 ? GEO.pos : null;
+  })();
+  return GEO.pend;
+}
+/* Se llama al empezar a escribir el PIN para que el aviso de permiso salga antes de checar */
+function warmPos(){ if (!GEO.pos || Date.now() - GEO.pos.t > 120000) getPos(); }
 function posData(pos){ return pos ? {lat: pos.lat, lng: pos.lng, prec: pos.prec} : {}; }
 function mapUrl(x){ return x && x.lat && x.lng ? 'https://www.google.com/maps?q=' + encodeURIComponent(x.lat + ',' + x.lng) : ''; }
 
@@ -432,7 +447,7 @@ async function punch(){
   if (!S.listo){ setMsg('Todavía no hay conexión con el servidor.', 'err'); S.pin = ''; renderPin(); return; }
   S.busy = true;
   var pin = S.pin;
-  setMsg('Obteniendo tu ubicación…');
+  setMsg('Obteniendo tu ubicación… acepta el permiso si el navegador lo pide.');
   try {
     var pos = await getPos();
     setMsg('Registrando…');
@@ -477,7 +492,7 @@ function showTicket(t){
       h('div', {class:'tk-time'}, hms(t.ts)),
       h('div', {class:'tk-date'}, longDate(t.ts)),
       t.nota ? h('div', {class:'tk-note ' + t.flag}, t.nota) : null,
-      h('div', {class:'tk-date', style:'text-transform:none;margin-top:8px'}, t.ubic ? '📍 Ubicación registrada' : 'Sin ubicación (permite el acceso a tu ubicación en el navegador)')
+      h('div', {class:'tk-date', style:'text-transform:none;margin-top:8px'}, t.ubic ? '📍 Ubicación registrada' : 'Sin ubicación. ' + (GEO.why || 'Permite el acceso a tu ubicación en el navegador.'))
     ),
     h('div', {class:'tk-foot'}, h('span', null, 'FOLIO ' + t.folio), h('button', {type:'button', class:'btn ghost sm', onclick:hideTicket}, 'Listo'))
   );
