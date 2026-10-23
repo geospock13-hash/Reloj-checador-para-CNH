@@ -244,9 +244,10 @@ td.act{display:flex;gap:6px;justify-content:flex-end}
             <div class="field"><label for="a-negocio">Nombre del negocio</label><input id="a-negocio" maxlength="60" placeholder="Mi negocio"></div>
             <div class="field"><label for="a-comida">Duración de la comida (minutos)</label><input id="a-comida" type="number" min="15" max="240" value="60"></div>
             <div class="field"><label for="a-tol">Retardo a partir del minuto</label><input id="a-tol" type="number" min="0" max="120" value="16"></div>
+            <div class="field" style="grid-column:1/-1"><label for="a-correo">Correo para el reporte diario de Excel</label><input id="a-correo" type="text" inputmode="email" maxlength="200" autocomplete="off" placeholder="nombre@correo.com (varios separados por coma)"></div>
           </div>
-          <div class="actions"><button class="btn" id="a-save" type="button">Guardar ajustes</button></div>
-          <p class="hint" id="a-msg">Hay retardo cuando la primera entrada del día llega con esa cantidad de minutos de tardanza o más. Con 16, llegar a las 9:16 ya es retardo y a las 9:15 no. Si la comida dura más que la duración indicada, se marca como comida excedida. La zona horaria y si el reloj muestra quién está en turno se cambian en la pestaña Config de tu hoja de Google.</p>
+          <div class="actions"><button class="btn" id="a-save" type="button">Guardar ajustes</button> <button class="btn ghost" id="a-send" type="button">Enviar el reporte de hoy ahora</button></div>
+          <p class="hint" id="a-msg">Hay retardo cuando la primera entrada del día llega con esa cantidad de minutos de tardanza o más. Con 16, llegar a las 9:16 ya es retardo y a las 9:15 no. Si la comida dura más que la duración indicada, se marca como comida excedida. Con un correo guardado, el reporte de Excel con las checadas del día se envía cada día a las 11:00 (Google lo manda dentro de esa hora); el botón de envío sirve para probarlo. La zona horaria y si el reloj muestra quién está en turno se cambian en la pestaña Config de tu hoja de Google.</p>
         </div>
         <div class="panel">
           <h2>Contraseña del portal</h2>
@@ -856,10 +857,24 @@ function renderCfg(){
 async function saveCfg(){
   if (!S.unlocked) return;
   try {
-    await api('guardarConfig', {negocio: $('a-negocio').value.trim(), tolerancia: $('a-tol').value, comida: $('a-comida').value});
-    setHint('a-msg', 'Ajustes guardados.', 'ok');
+    var correo = $('a-correo').value.trim();
+    var j = await api('guardarConfig', {negocio: $('a-negocio').value.trim(), tolerancia: $('a-tol').value, comida: $('a-comida').value, correo: correo});
+    if (j.aviso) setHint('a-msg', 'Ajustes guardados. ' + j.aviso, 'err');
+    else if (correo) setHint('a-msg', 'Ajustes guardados. El reporte se enviará cada día a ' + correo + ' después de las ' + S.horaEnvio + ':00 (Google lo manda dentro de esa hora).', 'ok');
+    else setHint('a-msg', 'Ajustes guardados. Sin correo, no se envía el reporte diario.', 'ok');
     await refresh();
   } catch (e) { setHint('a-msg', errMsg(e), 'err'); }
+}
+
+async function sendNow(){
+  if (!S.unlocked) return;
+  var b = $('a-send'); b.disabled = true;
+  setHint('a-msg', 'Enviando el reporte…');
+  try {
+    var j = await api('enviarReporte', {});
+    setHint('a-msg', 'Listo. Se envió el reporte de hoy a ' + j.para + ' (' + j.personas + ' personas, ' + j.registros + ' checadas).', 'ok');
+  } catch (e) { setHint('a-msg', errMsg(e), 'err'); }
+  finally { b.disabled = false; }
 }
 
 /* ---------- Candado del portal ---------- */
@@ -885,6 +900,8 @@ function lockNow(){
 async function loadAdmin(){
   var j = await api('datos', {});
   S.emps = j.emps;
+  S.horaEnvio = (j.cfg && j.cfg.horaEnvio != null) ? j.cfg.horaEnvio : 11;
+  if (!S.correoFilled){ $('a-correo').value = (j.cfg && j.cfg.correo) || ''; S.correoFilled = true; }
   renderEmps(); renderCfg();
 }
 async function lockSubmit(ev){
@@ -945,6 +962,7 @@ function wire(){
   $('r-csv').addEventListener('click', exportCsv);
   $('m-form').addEventListener('submit', addManual);
   $('a-save').addEventListener('click', saveCfg);
+  $('a-send').addEventListener('click', sendNow);
   document.addEventListener('keydown', function(ev){
     if ($('view-checador').hidden || $('entry').hidden) return;
     var tg = ev.target && ev.target.tagName;
